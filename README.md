@@ -1,1 +1,1 @@
-# wechat-work-app-chat-bundle
+# 企业微信群聊
