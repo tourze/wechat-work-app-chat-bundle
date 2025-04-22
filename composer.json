@@ -19,7 +19,9 @@
     "tourze/doctrine-snowflake-bundle": "0.0.*",
     "tourze/doctrine-user-bundle": "0.0.*",
     "tourze/doctrine-timestamp-bundle": "0.0.*",
-    "tourze/wechat-work-bundle": "0.0.*"
+    "tourze/wechat-work-bundle": "0.0.*",
+    "tourze/http-client-bundle": "0.0.*",
+    "psr/log": "^3|^2|^1"
   },
   "autoload": {
     "psr-4": {
