@@ -13,8 +13,8 @@ use Tourze\DoctrineUserBundle\Attribute\UpdatedByColumn;
 use Tourze\EasyAdmin\Attribute\Column\ExportColumn;
 use Tourze\EasyAdmin\Attribute\Column\ListColumn;
 use Tourze\EasyAdmin\Attribute\Filter\Filterable;
+use Tourze\WechatWorkContracts\AgentInterface;
 use WechatWorkAppChatBundle\Repository\AppChatRepository;
-use WechatWorkBundle\Entity\Agent;
 
 #[ORM\Entity(repositoryClass: AppChatRepository::class)]
 #[ORM\Table(name: 'wechat_work_app_chat_app_chat', options: ['comment' => '企业微信群聊会话'])]
@@ -28,9 +28,9 @@ class AppChat
     #[ORM\Column(type: Types::BIGINT, nullable: false, options: ['comment' => 'ID'])]
     private ?string $id = null;
 
-    #[ORM\ManyToOne(targetEntity: Agent::class)]
+    #[ORM\ManyToOne(targetEntity: AgentInterface::class)]
     #[ORM\JoinColumn(nullable: false)]
-    private Agent $agent;
+    private AgentInterface $agent;
 
     #[ORM\Column(type: Types::STRING, length: 32, unique: true, options: ['comment' => '企业微信群聊ID'])]
     private string $chatId;
@@ -78,12 +78,12 @@ class AppChat
         return $this->id;
     }
 
-    public function getAgent(): Agent
+    public function getAgent(): AgentInterface
     {
         return $this->agent;
     }
 
-    public function setAgent(Agent $agent): self
+    public function setAgent(AgentInterface $agent): self
     {
         $this->agent = $agent;
 

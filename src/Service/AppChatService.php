@@ -4,12 +4,12 @@ namespace WechatWorkAppChatBundle\Service;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
+use Tourze\WechatWorkContracts\AgentInterface;
 use WechatWorkAppChatBundle\Entity\AppChat;
 use WechatWorkAppChatBundle\Repository\AppChatRepository;
 use WechatWorkAppChatBundle\Request\CreateAppChatRequest;
 use WechatWorkAppChatBundle\Request\GetAppChatRequest;
 use WechatWorkAppChatBundle\Request\UpdateAppChatRequest;
-use WechatWorkBundle\Entity\Agent;
 use WechatWorkBundle\Service\WorkService;
 
 class AppChatService
@@ -22,7 +22,7 @@ class AppChatService
     ) {
     }
 
-    public function createAppChat(Agent $agent, string $name, string $owner, array $userList): AppChat
+    public function createAppChat(AgentInterface $agent, string $name, string $owner, array $userList): AppChat
     {
         // 调用企业微信API创建群聊
         $request = new CreateAppChatRequest();

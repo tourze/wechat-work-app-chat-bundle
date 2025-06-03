@@ -4,69 +4,166 @@ namespace WechatWorkAppChatBundle\Tests\Request;
 
 use PHPUnit\Framework\TestCase;
 use WechatWorkAppChatBundle\Entity\AppChat;
+use WechatWorkAppChatBundle\Entity\BaseChatMessage;
 use WechatWorkAppChatBundle\Entity\TextMessage;
 use WechatWorkAppChatBundle\Request\SendAppChatMessageRequest;
 use WechatWorkBundle\Entity\Agent;
+use WechatWorkBundle\Entity\Corp;
 
 class SendAppChatMessageRequestTest extends TestCase
 {
     private SendAppChatMessageRequest $request;
-    private TextMessage $textMessage;
-    private AppChat $appChat;
     private Agent $agent;
+    private AppChat $appChat;
 
     protected function setUp(): void
     {
         $this->request = new SendAppChatMessageRequest();
         
-        $this->agent = $this->createMock(Agent::class);
+        $corp = new Corp();
+        $this->agent = new Agent();
+        $this->agent->setCorp($corp);
+        $this->agent->setAgentId('test_agent_id');
         
-        $this->appChat = $this->createMock(AppChat::class);
-        $this->appChat->method('getAgent')->willReturn($this->agent);
-        $this->appChat->method('getChatId')->willReturn('test_chat_id');
-        
-        $this->textMessage = $this->createMock(TextMessage::class);
-        $this->textMessage->method('getAppChat')->willReturn($this->appChat);
-        $this->textMessage->method('getMsgType')->willReturn('text');
-        $this->textMessage->method('getRequestContent')->willReturn([
-            'text' => [
-                'content' => 'Test message content',
-            ],
-        ]);
+        $this->appChat = new AppChat();
+        $this->appChat->setAgent($this->agent);
+        $this->appChat->setChatId('test_chat_id');
     }
 
-    public function testGetRequestPath(): void
+    public function test_getRequestPath(): void
     {
         $this->assertEquals('/cgi-bin/appchat/send', $this->request->getRequestPath());
     }
 
-    public function testSetAndGetMessage(): void
+    public function test_setMessage_andGetMessage(): void
     {
-        $this->request->setMessage($this->textMessage);
-        $this->assertSame($this->textMessage, $this->request->getMessage());
+        $message = new TextMessage();
+        $message->setAppChat($this->appChat);
+        $message->setContent('Test message');
+
+        $this->request->setMessage($message);
+
+        $this->assertEquals($message, $this->request->getMessage());
     }
 
-    public function testSetMessageAlsoSetsAgent(): void
+    public function test_setMessage_setsAgentAutomatically(): void
     {
-        $this->request->setMessage($this->textMessage);
-        // 间接测试，只能断言没有抛出异常
-        $this->assertTrue(true);
+        $message = new TextMessage();
+        $message->setAppChat($this->appChat);
+        $message->setContent('Test message');
+
+        $this->request->setMessage($message);
+
+        $this->assertEquals($this->agent, $this->request->getAgent());
     }
 
-    public function testGetRequestOptions(): void
+    public function test_getRequestOptions_withTextMessage(): void
     {
-        $this->request->setMessage($this->textMessage);
-        
-        $expectedOptions = [
+        $message = new TextMessage();
+        $message->setAppChat($this->appChat);
+        $message->setContent('Hello World');
+
+        $this->request->setMessage($message);
+
+        $expected = [
             'json' => [
                 'chatid' => 'test_chat_id',
                 'msgtype' => 'text',
                 'text' => [
-                    'content' => 'Test message content',
+                    'content' => 'Hello World',
                 ],
             ],
         ];
-        
-        $this->assertEquals($expectedOptions, $this->request->getRequestOptions());
+
+        $this->assertEquals($expected, $this->request->getRequestOptions());
+    }
+
+    public function test_getRequestOptions_withEmptyContent(): void
+    {
+        $message = new TextMessage();
+        $message->setAppChat($this->appChat);
+        $message->setContent('');
+
+        $this->request->setMessage($message);
+
+        $expected = [
+            'json' => [
+                'chatid' => 'test_chat_id',
+                'msgtype' => 'text',
+                'text' => [
+                    'content' => '',
+                ],
+            ],
+        ];
+
+        $this->assertEquals($expected, $this->request->getRequestOptions());
+    }
+
+    public function test_getRequestOptions_withSpecialCharacters(): void
+    {
+        $message = new TextMessage();
+        $message->setAppChat($this->appChat);
+        $message->setContent('特殊字符测试 @#$%^&*()');
+
+        $this->request->setMessage($message);
+
+        $expected = [
+            'json' => [
+                'chatid' => 'test_chat_id',
+                'msgtype' => 'text',
+                'text' => [
+                    'content' => '特殊字符测试 @#$%^&*()',
+                ],
+            ],
+        ];
+
+        $this->assertEquals($expected, $this->request->getRequestOptions());
+    }
+
+    public function test_getRequestOptions_mergesContentCorrectly(): void
+    {
+        // 创建一个测试用的消息类来验证合并逻辑
+        $message = new class extends BaseChatMessage {
+            public function getMsgType(): string
+            {
+                return 'custom';
+            }
+
+            public function getRequestContent(): array
+            {
+                return [
+                    'custom' => [
+                        'field1' => 'value1',
+                        'field2' => 'value2',
+                    ],
+                    'extra' => 'data',
+                ];
+            }
+        };
+
+        $message->setAppChat($this->appChat);
+
+        $this->request->setMessage($message);
+
+        $expected = [
+            'json' => [
+                'chatid' => 'test_chat_id',
+                'msgtype' => 'custom',
+                'custom' => [
+                    'field1' => 'value1',
+                    'field2' => 'value2',
+                ],
+                'extra' => 'data',
+            ],
+        ];
+
+        $this->assertEquals($expected, $this->request->getRequestOptions());
+    }
+
+    public function test_agentAware_trait(): void
+    {
+        $this->request->setAgent($this->agent);
+
+        $this->assertEquals($this->agent, $this->request->getAgent());
     }
 } 

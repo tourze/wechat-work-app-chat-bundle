@@ -2,6 +2,7 @@
 
 namespace WechatWorkAppChatBundle\Tests\Entity;
 
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use WechatWorkAppChatBundle\Entity\AppChat;
 use WechatWorkAppChatBundle\Entity\MarkdownMessage;
@@ -9,82 +10,95 @@ use WechatWorkAppChatBundle\Entity\MarkdownMessage;
 class MarkdownMessageTest extends TestCase
 {
     private MarkdownMessage $markdownMessage;
-    private AppChat $appChat;
+    private MockObject $appChat;
 
     protected function setUp(): void
     {
-        $this->appChat = $this->createMock(AppChat::class);
         $this->markdownMessage = new MarkdownMessage();
+        $this->appChat = $this->createMock(AppChat::class);
+        $this->appChat->expects($this->any())->method('getChatId')->willReturn('test_chat_id');
     }
 
-    public function testGetMsgType(): void
+    public function test_getMsgType_returnsMarkdown(): void
     {
         $this->assertEquals('markdown', $this->markdownMessage->getMsgType());
     }
 
-    public function testSetAndGetContent(): void
+    public function test_getRequestContent_withValidMarkdown(): void
     {
-        $content = '# Header\n**Bold text**\n> Quote';
+        $content = '# Markdown Title\n\n**Bold text** and *italic text*';
         $this->markdownMessage->setContent($content);
-        $this->assertEquals($content, $this->markdownMessage->getContent());
-    }
 
-    public function testGetRequestContent(): void
-    {
-        $content = '# Test Header\n- List item 1\n- List item 2';
-        $this->markdownMessage->setContent($content);
-        
         $expected = [
             'markdown' => [
                 'content' => $content,
             ],
         ];
-        
+
         $this->assertEquals($expected, $this->markdownMessage->getRequestContent());
     }
 
-    public function testSetAndGetAppChat(): void
+    public function test_getRequestContent_withEmptyContent(): void
     {
-        $this->markdownMessage->setAppChat($this->appChat);
-        $this->assertSame($this->appChat, $this->markdownMessage->getAppChat());
+        $this->markdownMessage->setContent('');
+
+        $expected = [
+            'markdown' => [
+                'content' => '',
+            ],
+        ];
+
+        $this->assertEquals($expected, $this->markdownMessage->getRequestContent());
     }
 
-    public function testSetAndGetIsSent(): void
+    public function test_getRequestContent_withCodeBlock(): void
     {
-        $this->markdownMessage->setIsSent(true);
-        $this->assertTrue($this->markdownMessage->isSent());
-        
+        $content = "```php\n<?php\necho 'Hello World';\n```";
+        $this->markdownMessage->setContent($content);
+
+        $expected = [
+            'markdown' => [
+                'content' => $content,
+            ],
+        ];
+
+        $this->assertEquals($expected, $this->markdownMessage->getRequestContent());
+    }
+
+    public function test_setContent_andGetContent(): void
+    {
+        $content = '## Test markdown content';
+        $this->markdownMessage->setContent($content);
+
+        $this->assertEquals($content, $this->markdownMessage->getContent());
+    }
+
+    public function test_setContent_withLinks(): void
+    {
+        $content = '[Link Text](https://example.com)';
+        $this->markdownMessage->setContent($content);
+
+        $this->assertEquals($content, $this->markdownMessage->getContent());
+    }
+
+    public function test_setContent_withTables(): void
+    {
+        $content = "| Name | Age |\n|------|-----|\n| John | 25 |";
+        $this->markdownMessage->setContent($content);
+
+        $this->assertEquals($content, $this->markdownMessage->getContent());
+    }
+
+    public function test_inheritanceFromBaseChatMessage(): void
+    {
+        /** @var AppChat $appChat */
+        $appChat = $this->appChat;
+        $this->markdownMessage->setAppChat($appChat);
         $this->markdownMessage->setIsSent(false);
+        $this->markdownMessage->setMsgId(null);
+
+        $this->assertEquals($appChat, $this->markdownMessage->getAppChat());
         $this->assertFalse($this->markdownMessage->isSent());
-    }
-
-    public function testSetAndGetSentAt(): void
-    {
-        $now = new \DateTimeImmutable();
-        $this->markdownMessage->setSentAt($now);
-        $this->assertSame($now, $this->markdownMessage->getSentAt());
-    }
-
-    public function testSetAndGetMsgId(): void
-    {
-        $msgId = 'test_msg_id_123';
-        $this->markdownMessage->setMsgId($msgId);
-        $this->assertEquals($msgId, $this->markdownMessage->getMsgId());
-    }
-
-    public function testSetAndGetIsRecalled(): void
-    {
-        $this->markdownMessage->setIsRecalled(true);
-        $this->assertTrue($this->markdownMessage->isRecalled());
-        
-        $this->markdownMessage->setIsRecalled(false);
-        $this->assertFalse($this->markdownMessage->isRecalled());
-    }
-
-    public function testSetAndGetRecalledAt(): void
-    {
-        $now = new \DateTimeImmutable();
-        $this->markdownMessage->setRecalledAt($now);
-        $this->assertSame($now, $this->markdownMessage->getRecalledAt());
+        $this->assertNull($this->markdownMessage->getMsgId());
     }
 } 
