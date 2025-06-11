@@ -43,7 +43,7 @@ class SendMessageListener
                 $message->setSentAt(new \DateTimeImmutable());
                 $args->getObjectManager()->flush();
             }
-        } catch (\Exception $e) {
+        } catch  (\Throwable $e) {
             $this->logger->error('自动发送群聊消息失败', [
                 'chat_id' => $message->getAppChat()->getChatId(),
                 'error' => $e->getMessage(),

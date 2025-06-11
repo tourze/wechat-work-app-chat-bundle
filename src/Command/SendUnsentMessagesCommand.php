@@ -29,7 +29,7 @@ class SendUnsentMessagesCommand extends Command
             $output->writeln('发送完成');
 
             return Command::SUCCESS;
-        } catch (\Exception $e) {
+        } catch  (\Throwable $e) {
             $output->writeln(sprintf('发送失败：%s', $e->getMessage()));
 
             return Command::FAILURE;
