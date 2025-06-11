@@ -103,7 +103,7 @@ class MessageService
                     $message->setSentAt(new \DateTimeImmutable());
                     $this->entityManager->flush();
                 }
-            } catch  (\Throwable $e) {
+            } catch (\Throwable $e) {
                 $this->logger->error('发送群聊消息失败', [
                     'chat_id' => $message->getAppChat()->getChatId(),
                     'error' => $e->getMessage(),

@@ -79,7 +79,7 @@ class AppChatService
             $appChat->setLastSyncedAt(new \DateTimeImmutable());
 
             $this->entityManager->flush();
-        } catch  (\Throwable $e) {
+        } catch (\Throwable $e) {
             $this->logger->error('同步群聊信息失败', [
                 'chat_id' => $appChat->getChatId(),
                 'error' => $e->getMessage(),
@@ -94,7 +94,7 @@ class AppChatService
         foreach ($unsynced as $appChat) {
             try {
                 $this->syncAppChat($appChat);
-            } catch  (\Throwable $e) {
+            } catch (\Throwable $e) {
                 $this->logger->error('同步群聊信息失败', [
                     'chat_id' => $appChat->getChatId(),
                     'error' => $e->getMessage(),
