@@ -97,7 +97,7 @@ class SyncAppChatCommandTest extends TestCase
         $methodSource = $this->getMethodSource($method);
         
         // 验证异常处理
-        $this->assertStringContains('Exception', $methodSource);
+        $this->assertStringContains('Throwable', $methodSource);
         $this->assertStringContains('getMessage', $methodSource);
         $this->assertStringContains('同步失败', $methodSource);
     }

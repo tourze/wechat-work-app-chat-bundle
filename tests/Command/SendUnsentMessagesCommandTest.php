@@ -97,7 +97,7 @@ class SendUnsentMessagesCommandTest extends TestCase
         $methodSource = $this->getMethodSource($method);
         
         // 验证异常处理
-        $this->assertStringContains('Exception', $methodSource);
+        $this->assertStringContains('Throwable', $methodSource);
         $this->assertStringContains('getMessage', $methodSource);
         $this->assertStringContains('发送失败', $methodSource);
     }

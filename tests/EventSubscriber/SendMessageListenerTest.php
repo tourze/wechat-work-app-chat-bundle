@@ -139,7 +139,7 @@ class SendMessageListenerTest extends TestCase
         $methodSource = $this->getMethodSource($method);
         
         // 验证错误处理逻辑
-        $this->assertStringContains('Exception', $methodSource);
+        $this->assertStringContains('Throwable', $methodSource);
         $this->assertStringContains('logger', $methodSource);
         $this->assertStringContains('error', $methodSource);
         $this->assertStringContains('自动发送群聊消息失败', $methodSource);
