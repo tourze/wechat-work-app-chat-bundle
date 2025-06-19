@@ -13,7 +13,7 @@ use WechatWorkAppChatBundle\Repository\AppChatRepository;
 
 #[ORM\Entity(repositoryClass: AppChatRepository::class)]
 #[ORM\Table(name: 'wechat_work_app_chat_app_chat', options: ['comment' => '企业微信群聊会话'])]
-class AppChat
+class AppChat implements \Stringable
 {
     use TimestampableAware;
     #[ORM\Id]
@@ -163,4 +163,9 @@ class AppChat
     public function getUpdatedBy(): ?string
     {
         return $this->updatedBy;
-    }}
+    }
+    public function __toString(): string
+    {
+        return (string) $this->getId();
+    }
+}

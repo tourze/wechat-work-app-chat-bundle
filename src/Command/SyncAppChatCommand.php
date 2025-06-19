@@ -14,6 +14,8 @@ use WechatWorkAppChatBundle\Service\AppChatService;
 )]
 class SyncAppChatCommand extends Command
 {
+    public const NAME = 'sync-app-chat';
+
     public function __construct(
         private readonly AppChatService $appChatService,
     ) {

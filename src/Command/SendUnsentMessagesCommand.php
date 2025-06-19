@@ -14,6 +14,8 @@ use WechatWorkAppChatBundle\Service\MessageService;
 )]
 class SendUnsentMessagesCommand extends Command
 {
+    public const NAME = 'send-unsent-messages';
+
     public function __construct(
         private readonly MessageService $messageService,
     ) {
