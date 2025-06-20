@@ -135,7 +135,7 @@ class BaseChatMessageTest extends TestCase
 
     public function test_setCreateTime_andGetCreateTime(): void
     {
-        $createTime = new \DateTime();
+        $createTime = new \DateTimeImmutable();
         $this->message->setCreateTime($createTime);
 
         $this->assertEquals($createTime, $this->message->getCreateTime());
@@ -143,7 +143,7 @@ class BaseChatMessageTest extends TestCase
 
     public function test_setUpdateTime_andGetUpdateTime(): void
     {
-        $updateTime = new \DateTime();
+        $updateTime = new \DateTimeImmutable();
         $this->message->setUpdateTime($updateTime);
 
         $this->assertEquals($updateTime, $this->message->getUpdateTime());

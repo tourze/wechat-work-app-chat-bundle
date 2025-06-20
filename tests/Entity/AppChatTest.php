@@ -137,7 +137,7 @@ class AppChatTest extends TestCase
 
     public function test_setCreateTime_andGetCreateTime(): void
     {
-        $createTime = new \DateTime();
+        $createTime = new \DateTimeImmutable();
         $this->appChat->setCreateTime($createTime);
 
         $this->assertEquals($createTime, $this->appChat->getCreateTime());
@@ -145,7 +145,7 @@ class AppChatTest extends TestCase
 
     public function test_setUpdateTime_andGetUpdateTime(): void
     {
-        $updateTime = new \DateTime();
+        $updateTime = new \DateTimeImmutable();
         $this->appChat->setUpdateTime($updateTime);
 
         $this->assertEquals($updateTime, $this->appChat->getUpdateTime());
