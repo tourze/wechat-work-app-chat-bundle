@@ -23,10 +23,10 @@ class SendMessageListenerTest extends TestCase
         $this->assertCount(2, $parameters);
         
         $this->assertEquals('workService', $parameters[0]->getName());
-        $this->assertEquals('WechatWorkBundle\Service\WorkService', $parameters[0]->getType()->getName());
+        $this->assertEquals('WechatWorkBundle\Service\WorkService', (string)$parameters[0]->getType());
         
         $this->assertEquals('logger', $parameters[1]->getName());
-        $this->assertEquals('Psr\Log\LoggerInterface', $parameters[1]->getType()->getName());
+        $this->assertEquals('Psr\Log\LoggerInterface', (string)$parameters[1]->getType());
     }
 
     public function test_listener_has_entity_listener_attributes(): void
@@ -79,15 +79,15 @@ class SendMessageListenerTest extends TestCase
         $this->assertCount(2, $parameters);
         
         $this->assertEquals('message', $parameters[0]->getName());
-        $this->assertEquals('WechatWorkAppChatBundle\Entity\BaseChatMessage', $parameters[0]->getType()->getName());
+        $this->assertEquals('WechatWorkAppChatBundle\Entity\BaseChatMessage', (string)$parameters[0]->getType());
         
         $this->assertEquals('args', $parameters[1]->getName());
-        $this->assertEquals('Doctrine\ORM\Event\PostPersistEventArgs', $parameters[1]->getType()->getName());
+        $this->assertEquals('Doctrine\ORM\Event\PostPersistEventArgs', (string)$parameters[1]->getType());
         
         // 验证返回类型
         $returnType = $method->getReturnType();
         $this->assertNotNull($returnType);
-        $this->assertEquals('void', $returnType->getName());
+        $this->assertEquals('void', (string)$returnType);
     }
 
     public function test_postPersist_method_has_throws_annotation(): void

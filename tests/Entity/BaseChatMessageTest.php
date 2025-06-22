@@ -37,7 +37,7 @@ class BaseChatMessageTest extends TestCase
 
     public function test_setAppChat_andGetAppChat(): void
     {
-        /** @var AppChat $appChat */
+        /** @var MockObject&AppChat $appChat */
         $appChat = $this->appChat;
         $this->message->setAppChat($appChat);
 
@@ -162,7 +162,7 @@ class BaseChatMessageTest extends TestCase
 
     public function test_fluent_interface(): void
     {
-        /** @var AppChat $appChat */
+        /** @var MockObject&AppChat $appChat */
         $appChat = $this->appChat;
         $sentAt = new \DateTimeImmutable();
         

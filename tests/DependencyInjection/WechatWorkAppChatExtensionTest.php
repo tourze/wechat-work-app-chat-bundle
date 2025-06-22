@@ -30,15 +30,15 @@ class WechatWorkAppChatExtensionTest extends TestCase
         $this->assertCount(2, $parameters);
         
         $this->assertEquals('configs', $parameters[0]->getName());
-        $this->assertEquals('array', $parameters[0]->getType()->getName());
+        $this->assertEquals('array', (string)$parameters[0]->getType());
         
         $this->assertEquals('container', $parameters[1]->getName());
-        $this->assertEquals('Symfony\Component\DependencyInjection\ContainerBuilder', $parameters[1]->getType()->getName());
+        $this->assertEquals('Symfony\Component\DependencyInjection\ContainerBuilder', (string)$parameters[1]->getType());
         
         // 验证返回类型
         $returnType = $method->getReturnType();
         $this->assertNotNull($returnType);
-        $this->assertEquals('void', $returnType->getName());
+        $this->assertEquals('void', (string)$returnType);
     }
 
     public function test_load_method_implementation(): void

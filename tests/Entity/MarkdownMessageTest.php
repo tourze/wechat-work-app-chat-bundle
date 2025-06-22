@@ -91,7 +91,7 @@ class MarkdownMessageTest extends TestCase
 
     public function test_inheritanceFromBaseChatMessage(): void
     {
-        /** @var AppChat $appChat */
+        /** @var MockObject&AppChat $appChat */
         $appChat = $this->appChat;
         $this->markdownMessage->setAppChat($appChat);
         $this->markdownMessage->setIsSent(false);

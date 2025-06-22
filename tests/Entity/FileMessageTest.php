@@ -77,7 +77,7 @@ class FileMessageTest extends TestCase
 
     public function test_inheritanceFromBaseChatMessage(): void
     {
-        /** @var AppChat $appChat */
+        /** @var MockObject&AppChat $appChat */
         $appChat = $this->appChat;
         $this->fileMessage->setAppChat($appChat);
         $this->fileMessage->setIsSent(false);

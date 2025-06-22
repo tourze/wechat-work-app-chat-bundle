@@ -37,7 +37,7 @@ class ImageMessageRepositoryTest extends TestCase
         $returnType = $method->getReturnType();
         
         $this->assertNotNull($returnType);
-        $this->assertEquals('array', $returnType->getName());
+        $this->assertEquals('array', (string)$returnType);
     }
 
     public function test_repository_has_correct_entity_class(): void

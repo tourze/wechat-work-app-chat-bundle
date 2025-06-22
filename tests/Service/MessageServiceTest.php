@@ -24,25 +24,25 @@ class MessageServiceTest extends TestCase
         
         // 验证构造函数参数类型
         $this->assertEquals('entityManager', $parameters[0]->getName());
-        $this->assertEquals('Doctrine\ORM\EntityManagerInterface', $parameters[0]->getType()->getName());
+        $this->assertEquals('Doctrine\ORM\EntityManagerInterface', (string)$parameters[0]->getType());
         
         $this->assertEquals('textMessageRepository', $parameters[1]->getName());
-        $this->assertEquals('WechatWorkAppChatBundle\Repository\TextMessageRepository', $parameters[1]->getType()->getName());
+        $this->assertEquals('WechatWorkAppChatBundle\Repository\TextMessageRepository', (string)$parameters[1]->getType());
         
         $this->assertEquals('markdownMessageRepository', $parameters[2]->getName());
-        $this->assertEquals('WechatWorkAppChatBundle\Repository\MarkdownMessageRepository', $parameters[2]->getType()->getName());
+        $this->assertEquals('WechatWorkAppChatBundle\Repository\MarkdownMessageRepository', (string)$parameters[2]->getType());
         
         $this->assertEquals('imageMessageRepository', $parameters[3]->getName());
-        $this->assertEquals('WechatWorkAppChatBundle\Repository\ImageMessageRepository', $parameters[3]->getType()->getName());
+        $this->assertEquals('WechatWorkAppChatBundle\Repository\ImageMessageRepository', (string)$parameters[3]->getType());
         
         $this->assertEquals('fileMessageRepository', $parameters[4]->getName());
-        $this->assertEquals('WechatWorkAppChatBundle\Repository\FileMessageRepository', $parameters[4]->getType()->getName());
+        $this->assertEquals('WechatWorkAppChatBundle\Repository\FileMessageRepository', (string)$parameters[4]->getType());
         
         $this->assertEquals('workService', $parameters[5]->getName());
-        $this->assertEquals('WechatWorkBundle\Service\WorkService', $parameters[5]->getType()->getName());
+        $this->assertEquals('WechatWorkBundle\Service\WorkService', (string)$parameters[5]->getType());
         
         $this->assertEquals('logger', $parameters[6]->getName());
-        $this->assertEquals('Psr\Log\LoggerInterface', $parameters[6]->getType()->getName());
+        $this->assertEquals('Psr\Log\LoggerInterface', (string)$parameters[6]->getType());
     }
 
     public function test_sendText_method_exists(): void
@@ -57,15 +57,15 @@ class MessageServiceTest extends TestCase
         $this->assertCount(2, $parameters);
         
         $this->assertEquals('appChat', $parameters[0]->getName());
-        $this->assertEquals('WechatWorkAppChatBundle\Entity\AppChat', $parameters[0]->getType()->getName());
+        $this->assertEquals('WechatWorkAppChatBundle\Entity\AppChat', (string)$parameters[0]->getType());
         
         $this->assertEquals('content', $parameters[1]->getName());
-        $this->assertEquals('string', $parameters[1]->getType()->getName());
+        $this->assertEquals('string', (string)$parameters[1]->getType());
         
         // 验证返回类型
         $returnType = $method->getReturnType();
         $this->assertNotNull($returnType);
-        $this->assertEquals('WechatWorkAppChatBundle\Entity\TextMessage', $returnType->getName());
+        $this->assertEquals('WechatWorkAppChatBundle\Entity\TextMessage', (string)$returnType);
     }
 
     public function test_sendMarkdown_method_exists(): void
@@ -80,15 +80,15 @@ class MessageServiceTest extends TestCase
         $this->assertCount(2, $parameters);
         
         $this->assertEquals('appChat', $parameters[0]->getName());
-        $this->assertEquals('WechatWorkAppChatBundle\Entity\AppChat', $parameters[0]->getType()->getName());
+        $this->assertEquals('WechatWorkAppChatBundle\Entity\AppChat', (string)$parameters[0]->getType());
         
         $this->assertEquals('content', $parameters[1]->getName());
-        $this->assertEquals('string', $parameters[1]->getType()->getName());
+        $this->assertEquals('string', (string)$parameters[1]->getType());
         
         // 验证返回类型
         $returnType = $method->getReturnType();
         $this->assertNotNull($returnType);
-        $this->assertEquals('WechatWorkAppChatBundle\Entity\MarkdownMessage', $returnType->getName());
+        $this->assertEquals('WechatWorkAppChatBundle\Entity\MarkdownMessage', (string)$returnType);
     }
 
     public function test_sendImage_method_exists(): void
@@ -103,15 +103,15 @@ class MessageServiceTest extends TestCase
         $this->assertCount(2, $parameters);
         
         $this->assertEquals('appChat', $parameters[0]->getName());
-        $this->assertEquals('WechatWorkAppChatBundle\Entity\AppChat', $parameters[0]->getType()->getName());
+        $this->assertEquals('WechatWorkAppChatBundle\Entity\AppChat', (string)$parameters[0]->getType());
         
         $this->assertEquals('mediaId', $parameters[1]->getName());
-        $this->assertEquals('string', $parameters[1]->getType()->getName());
+        $this->assertEquals('string', (string)$parameters[1]->getType());
         
         // 验证返回类型
         $returnType = $method->getReturnType();
         $this->assertNotNull($returnType);
-        $this->assertEquals('WechatWorkAppChatBundle\Entity\ImageMessage', $returnType->getName());
+        $this->assertEquals('WechatWorkAppChatBundle\Entity\ImageMessage', (string)$returnType);
     }
 
     public function test_sendFile_method_exists(): void
@@ -126,15 +126,15 @@ class MessageServiceTest extends TestCase
         $this->assertCount(2, $parameters);
         
         $this->assertEquals('appChat', $parameters[0]->getName());
-        $this->assertEquals('WechatWorkAppChatBundle\Entity\AppChat', $parameters[0]->getType()->getName());
+        $this->assertEquals('WechatWorkAppChatBundle\Entity\AppChat', (string)$parameters[0]->getType());
         
         $this->assertEquals('mediaId', $parameters[1]->getName());
-        $this->assertEquals('string', $parameters[1]->getType()->getName());
+        $this->assertEquals('string', (string)$parameters[1]->getType());
         
         // 验证返回类型
         $returnType = $method->getReturnType();
         $this->assertNotNull($returnType);
-        $this->assertEquals('WechatWorkAppChatBundle\Entity\FileMessage', $returnType->getName());
+        $this->assertEquals('WechatWorkAppChatBundle\Entity\FileMessage', (string)$returnType);
     }
 
     public function test_sendUnsent_method_exists(): void
@@ -151,7 +151,7 @@ class MessageServiceTest extends TestCase
         // 验证返回类型
         $returnType = $method->getReturnType();
         $this->assertNotNull($returnType);
-        $this->assertEquals('void', $returnType->getName());
+        $this->assertEquals('void', (string)$returnType);
     }
 
     public function test_sendText_method_implementation(): void

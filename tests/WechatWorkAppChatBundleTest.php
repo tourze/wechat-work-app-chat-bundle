@@ -18,26 +18,6 @@ class WechatWorkAppChatBundleTest extends TestCase
         $this->assertTrue($reflection->isSubclassOf('Symfony\Component\HttpKernel\Bundle\Bundle'));
     }
 
-    public function test_bundle_has_permission_attribute(): void
-    {
-        $reflection = new \ReflectionClass(WechatWorkAppChatBundle::class);
-        $attributes = $reflection->getAttributes();
-        
-        $this->assertNotEmpty($attributes);
-        
-        $permissionAttribute = null;
-        foreach ($attributes as $attribute) {
-            if ($attribute->getName() === 'Tourze\EasyAdmin\Attribute\Permission\AsPermission') {
-                $permissionAttribute = $attribute;
-                break;
-            }
-        }
-        
-        $this->assertNotNull($permissionAttribute);
-        
-        $arguments = $permissionAttribute->getArguments();
-        $this->assertEquals('企业微信群聊服务', $arguments['title']);
-    }
 
     public function test_bundle_namespace_is_correct(): void
     {

@@ -29,7 +29,7 @@ class AppChatRepositoryTest extends TestCase
         $parameters = $method->getParameters();
         $this->assertCount(1, $parameters);
         $this->assertEquals('chatId', $parameters[0]->getName());
-        $this->assertEquals('string', $parameters[0]->getType()->getName());
+        $this->assertEquals('string', (string)$parameters[0]->getType());
     }
 
     public function test_findByChatId_return_type(): void
@@ -40,7 +40,7 @@ class AppChatRepositoryTest extends TestCase
         
         $this->assertNotNull($returnType);
         $this->assertTrue($returnType->allowsNull());
-        $this->assertEquals('WechatWorkAppChatBundle\Entity\AppChat', $returnType->getName());
+        $this->assertEquals('?WechatWorkAppChatBundle\Entity\AppChat', (string)$returnType);
     }
 
     public function test_findUnsynced_method_exists(): void
@@ -62,7 +62,7 @@ class AppChatRepositoryTest extends TestCase
         $returnType = $method->getReturnType();
         
         $this->assertNotNull($returnType);
-        $this->assertEquals('array', $returnType->getName());
+        $this->assertEquals('array', (string)$returnType);
     }
 
     public function test_repository_has_correct_entity_class(): void

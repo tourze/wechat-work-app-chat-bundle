@@ -24,16 +24,16 @@ class AppChatServiceTest extends TestCase
         
         // 验证构造函数参数类型
         $this->assertEquals('entityManager', $parameters[0]->getName());
-        $this->assertEquals('Doctrine\ORM\EntityManagerInterface', $parameters[0]->getType()->getName());
+        $this->assertEquals('Doctrine\ORM\EntityManagerInterface', (string)$parameters[0]->getType());
         
         $this->assertEquals('appChatRepository', $parameters[1]->getName());
-        $this->assertEquals('WechatWorkAppChatBundle\Repository\AppChatRepository', $parameters[1]->getType()->getName());
+        $this->assertEquals('WechatWorkAppChatBundle\Repository\AppChatRepository', (string)$parameters[1]->getType());
         
         $this->assertEquals('workService', $parameters[2]->getName());
-        $this->assertEquals('WechatWorkBundle\Service\WorkService', $parameters[2]->getType()->getName());
+        $this->assertEquals('WechatWorkBundle\Service\WorkService', (string)$parameters[2]->getType());
         
         $this->assertEquals('logger', $parameters[3]->getName());
-        $this->assertEquals('Psr\Log\LoggerInterface', $parameters[3]->getType()->getName());
+        $this->assertEquals('Psr\Log\LoggerInterface', (string)$parameters[3]->getType());
     }
 
     public function test_createAppChat_method_exists(): void
@@ -55,7 +55,7 @@ class AppChatServiceTest extends TestCase
         // 验证返回类型
         $returnType = $method->getReturnType();
         $this->assertNotNull($returnType);
-        $this->assertEquals('WechatWorkAppChatBundle\Entity\AppChat', $returnType->getName());
+        $this->assertEquals('WechatWorkAppChatBundle\Entity\AppChat', (string)$returnType);
     }
 
     public function test_updateAppChat_method_exists(): void
@@ -70,12 +70,12 @@ class AppChatServiceTest extends TestCase
         $this->assertCount(1, $parameters);
         
         $this->assertEquals('appChat', $parameters[0]->getName());
-        $this->assertEquals('WechatWorkAppChatBundle\Entity\AppChat', $parameters[0]->getType()->getName());
+        $this->assertEquals('WechatWorkAppChatBundle\Entity\AppChat', (string)$parameters[0]->getType());
         
         // 验证返回类型
         $returnType = $method->getReturnType();
         $this->assertNotNull($returnType);
-        $this->assertEquals('void', $returnType->getName());
+        $this->assertEquals('void', (string)$returnType);
     }
 
     public function test_syncAppChat_method_exists(): void
@@ -90,12 +90,12 @@ class AppChatServiceTest extends TestCase
         $this->assertCount(1, $parameters);
         
         $this->assertEquals('appChat', $parameters[0]->getName());
-        $this->assertEquals('WechatWorkAppChatBundle\Entity\AppChat', $parameters[0]->getType()->getName());
+        $this->assertEquals('WechatWorkAppChatBundle\Entity\AppChat', (string)$parameters[0]->getType());
         
         // 验证返回类型
         $returnType = $method->getReturnType();
         $this->assertNotNull($returnType);
-        $this->assertEquals('void', $returnType->getName());
+        $this->assertEquals('void', (string)$returnType);
     }
 
     public function test_syncUnsynced_method_exists(): void
@@ -112,7 +112,7 @@ class AppChatServiceTest extends TestCase
         // 验证返回类型
         $returnType = $method->getReturnType();
         $this->assertNotNull($returnType);
-        $this->assertEquals('void', $returnType->getName());
+        $this->assertEquals('void', (string)$returnType);
     }
 
     public function test_createAppChat_method_implementation(): void

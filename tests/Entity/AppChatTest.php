@@ -21,7 +21,7 @@ class AppChatTest extends TestCase
 
     public function test_setAgent_andGetAgent(): void
     {
-        /** @var AgentInterface $agent */
+        /** @var MockObject&AgentInterface $agent */
         $agent = $this->agent;
         $this->appChat->setAgent($agent);
 
@@ -158,7 +158,7 @@ class AppChatTest extends TestCase
 
     public function test_fluent_interface(): void
     {
-        /** @var AgentInterface $agent */
+        /** @var MockObject&AgentInterface $agent */
         $agent = $this->agent;
         $result = $this->appChat
             ->setAgent($agent)

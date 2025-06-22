@@ -9,12 +9,12 @@ use Symfony\Component\Console\Output\OutputInterface;
 use WechatWorkAppChatBundle\Service\MessageService;
 
 #[AsCommand(
-    name: 'wechat-work:app-chat:send-unsent',
+    name: self::NAME,
     description: '发送未发送的企业微信群聊消息',
 )]
 class SendUnsentMessagesCommand extends Command
 {
-    public const NAME = 'send-unsent-messages';
+    public const NAME = 'wechat-work:app-chat:send-unsent';
 
     public function __construct(
         private readonly MessageService $messageService,

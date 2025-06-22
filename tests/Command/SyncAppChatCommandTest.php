@@ -29,7 +29,7 @@ class SyncAppChatCommandTest extends TestCase
         $this->assertCount(1, $parameters);
         
         $this->assertEquals('appChatService', $parameters[0]->getName());
-        $this->assertEquals('WechatWorkAppChatBundle\Service\AppChatService', $parameters[0]->getType()->getName());
+        $this->assertEquals('WechatWorkAppChatBundle\Service\AppChatService', (string)$parameters[0]->getType());
     }
 
     public function test_command_has_attribute_configuration(): void
@@ -71,7 +71,7 @@ class SyncAppChatCommandTest extends TestCase
         // 验证返回类型
         $returnType = $method->getReturnType();
         $this->assertNotNull($returnType);
-        $this->assertEquals('int', $returnType->getName());
+        $this->assertEquals('int', (string)$returnType);
     }
 
     public function test_execute_method_implementation(): void

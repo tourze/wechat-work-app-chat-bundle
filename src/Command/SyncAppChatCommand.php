@@ -9,12 +9,12 @@ use Symfony\Component\Console\Output\OutputInterface;
 use WechatWorkAppChatBundle\Service\AppChatService;
 
 #[AsCommand(
-    name: 'wechat-work:app-chat:sync',
+    name: self::NAME,
     description: '同步企业微信群聊信息',
 )]
 class SyncAppChatCommand extends Command
 {
-    public const NAME = 'sync-app-chat';
+    public const NAME = 'wechat-work:app-chat:sync';
 
     public function __construct(
         private readonly AppChatService $appChatService,

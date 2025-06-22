@@ -77,7 +77,7 @@ class ImageMessageTest extends TestCase
 
     public function test_inheritanceFromBaseChatMessage(): void
     {
-        /** @var AppChat $appChat */
+        /** @var MockObject&AppChat $appChat */
         $appChat = $this->appChat;
         $this->imageMessage->setAppChat($appChat);
         $this->imageMessage->setIsSent(true);
