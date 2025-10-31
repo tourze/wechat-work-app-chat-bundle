@@ -4,14 +4,13 @@ namespace WechatWorkAppChatBundle\Repository;
 
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
+use Tourze\PHPUnitSymfonyKernelTest\Attribute\AsRepository;
 use WechatWorkAppChatBundle\Entity\ImageMessage;
 
 /**
- * @method ImageMessage|null find($id, $lockMode = null, $lockVersion = null)
- * @method ImageMessage|null findOneBy(array $criteria, array $orderBy = null)
- * @method ImageMessage[]    findAll()
- * @method ImageMessage[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ * @extends ServiceEntityRepository<ImageMessage>
  */
+#[AsRepository(entityClass: ImageMessage::class)]
 class ImageMessageRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
@@ -19,13 +18,36 @@ class ImageMessageRepository extends ServiceEntityRepository
         parent::__construct($registry, ImageMessage::class);
     }
 
+    /**
+     * @return ImageMessage[]
+     */
     public function findUnsent(): array
     {
+        /** @var array<ImageMessage> */
         return $this->createQueryBuilder('im')
             ->andWhere('im.isSent = :isSent')
             ->setParameter('isSent', false)
             ->orderBy('im.id', 'ASC')
             ->getQuery()
-            ->getResult();
+            ->getResult()
+        ;
+    }
+
+    public function save(ImageMessage $entity, bool $flush = true): void
+    {
+        $this->getEntityManager()->persist($entity);
+
+        if ($flush) {
+            $this->getEntityManager()->flush();
+        }
+    }
+
+    public function remove(ImageMessage $entity, bool $flush = true): void
+    {
+        $this->getEntityManager()->remove($entity);
+
+        if ($flush) {
+            $this->getEntityManager()->flush();
+        }
     }
 }

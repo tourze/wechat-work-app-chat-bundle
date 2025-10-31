@@ -17,6 +17,9 @@ class SendAppChatMessageRequest extends ApiRequest
         return '/cgi-bin/appchat/send';
     }
 
+    /**
+     * @return array<string, mixed>|null
+     */
     public function getRequestOptions(): ?array
     {
         return [

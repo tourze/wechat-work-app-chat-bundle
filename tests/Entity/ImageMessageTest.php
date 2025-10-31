@@ -2,92 +2,174 @@
 
 namespace WechatWorkAppChatBundle\Tests\Entity;
 
-use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use Tourze\PHPUnitDoctrineEntity\AbstractEntityTestCase;
+use Tourze\WechatWorkContracts\AgentInterface;
 use WechatWorkAppChatBundle\Entity\AppChat;
+use WechatWorkAppChatBundle\Entity\BaseChatMessage;
 use WechatWorkAppChatBundle\Entity\ImageMessage;
 
-class ImageMessageTest extends TestCase
+/**
+ * @internal
+ */
+#[CoversClass(ImageMessage::class)]
+final class ImageMessageTest extends AbstractEntityTestCase
 {
-    private ImageMessage $imageMessage;
-    private MockObject $appChat;
+    protected function createEntity(): object
+    {
+        return new ImageMessage();
+    }
+
+    /**
+     * @return array<string, array{string, string}>
+     */
+    public static function propertiesProvider(): array
+    {
+        return [
+            'mediaId' => ['mediaId', 'test_value'],
+        ];
+    }
 
     protected function setUp(): void
     {
-        $this->imageMessage = new ImageMessage();
-        $this->appChat = $this->createMock(AppChat::class);
-        $this->appChat->expects($this->any())->method('getChatId')->willReturn('test_chat_id');
+        parent::setUp();
     }
 
-    public function test_getMsgType_returnsImage(): void
+    public function testCreateImageMessage(): void
     {
-        $this->assertEquals('image', $this->imageMessage->getMsgType());
+        $agent = $this->createMock(AgentInterface::class);
+
+        $appChat = new AppChat();
+        $appChat->setAgent($agent);
+        $appChat->setChatId('test_chat');
+        $appChat->setName('测试群聊');
+        $appChat->setOwner('owner');
+
+        $imageMessage = new ImageMessage();
+        $imageMessage->setAppChat($appChat);
+        $imageMessage->setMediaId('test_image_media_123');
+        $imageMessage->setIsSent(true);
+        $imageMessage->setSentAt(new \DateTimeImmutable());
+        $imageMessage->setMsgId('test_msg_id');
+
+        $this->assertSame($appChat, $imageMessage->getAppChat());
+        $this->assertSame('test_image_media_123', $imageMessage->getMediaId());
+        $this->assertTrue($imageMessage->isSent());
+        $this->assertInstanceOf(\DateTimeImmutable::class, $imageMessage->getSentAt());
+        $this->assertSame('test_msg_id', $imageMessage->getMsgId());
     }
 
-    public function test_getRequestContent_withValidMediaId(): void
+    public function testGetMsgType(): void
     {
-        $mediaId = 'test_media_id_123';
-        $this->imageMessage->setMediaId($mediaId);
+        $imageMessage = new ImageMessage();
+        $this->assertSame('image', $imageMessage->getMsgType());
+    }
+
+    public function testGetRequestContent(): void
+    {
+        $imageMessage = new ImageMessage();
+        $imageMessage->setMediaId('image_media_id_456');
 
         $expected = [
             'image' => [
-                'media_id' => $mediaId,
+                'media_id' => 'image_media_id_456',
             ],
         ];
 
-        $this->assertEquals($expected, $this->imageMessage->getRequestContent());
+        $this->assertSame($expected, $imageMessage->getRequestContent());
     }
 
-    public function test_getRequestContent_withEmptyMediaId(): void
+    public function testImageMessageDefaults(): void
     {
-        $this->imageMessage->setMediaId('');
+        $imageMessage = new ImageMessage();
 
-        $expected = [
-            'image' => [
-                'media_id' => '',
-            ],
-        ];
-
-        $this->assertEquals($expected, $this->imageMessage->getRequestContent());
+        $this->assertFalse($imageMessage->isSent());
+        $this->assertNull($imageMessage->getSentAt());
+        $this->assertNull($imageMessage->getMsgId());
+        $this->assertFalse($imageMessage->isRecalled());
+        $this->assertNull($imageMessage->getRecalledAt());
     }
 
-    public function test_setMediaId_andGetMediaId(): void
+    public function testSettersWorkCorrectly(): void
     {
-        $mediaId = 'test_media_id_456';
-        $this->imageMessage->setMediaId($mediaId);
+        $agent = $this->createMock(AgentInterface::class);
 
-        $this->assertEquals($mediaId, $this->imageMessage->getMediaId());
+        $appChat = new AppChat();
+        $appChat->setAgent($agent);
+        $appChat->setChatId('test_chat');
+        $appChat->setName('测试群聊');
+        $appChat->setOwner('owner');
+
+        $now = new \DateTimeImmutable();
+        $imageMessage = new ImageMessage();
+
+        $imageMessage->setAppChat($appChat);
+        $imageMessage->setMediaId('test_image_media');
+        $imageMessage->setIsSent(true);
+        $imageMessage->setSentAt($now);
+        $imageMessage->setMsgId('msg123');
+        $imageMessage->setIsRecalled(false);
+        $imageMessage->setRecalledAt(null);
+
+        $this->assertSame($appChat, $imageMessage->getAppChat());
+        $this->assertSame('test_image_media', $imageMessage->getMediaId());
+        $this->assertTrue($imageMessage->isSent());
+        $this->assertSame($now, $imageMessage->getSentAt());
+        $this->assertSame('msg123', $imageMessage->getMsgId());
+        $this->assertFalse($imageMessage->isRecalled());
+        $this->assertNull($imageMessage->getRecalledAt());
     }
 
-    public function test_setMediaId_withLongId(): void
+    public function testStringable(): void
     {
-        $mediaId = str_repeat('a', 128);
-        $this->imageMessage->setMediaId($mediaId);
-
-        $this->assertEquals($mediaId, $this->imageMessage->getMediaId());
+        $imageMessage = new ImageMessage();
+        $this->assertIsString((string) $imageMessage);
     }
 
-    public function test_setMediaId_withSpecialCharacters(): void
+    public function testMediaIdValidation(): void
     {
-        $mediaId = 'media_id_with-special_chars.123';
-        $this->imageMessage->setMediaId($mediaId);
+        $imageMessage = new ImageMessage();
 
-        $this->assertEquals($mediaId, $this->imageMessage->getMediaId());
+        // Test with various media ID lengths
+        $shortMediaId = 'img_short';
+        $imageMessage->setMediaId($shortMediaId);
+        $this->assertSame($shortMediaId, $imageMessage->getMediaId());
+
+        $longMediaId = str_repeat('img_', 32); // 128 characters
+        $imageMessage->setMediaId($longMediaId);
+        $this->assertSame($longMediaId, $imageMessage->getMediaId());
     }
 
-    public function test_inheritanceFromBaseChatMessage(): void
+    public function testRecallFunctionality(): void
     {
-        /** @var MockObject&AppChat $appChat */
-        $appChat = $this->appChat;
-        $this->imageMessage->setAppChat($appChat);
-        $this->imageMessage->setIsSent(true);
-        $this->imageMessage->setMsgId('img_msg_123');
-        $sentAt = new \DateTimeImmutable();
-        $this->imageMessage->setSentAt($sentAt);
+        $imageMessage = new ImageMessage();
+        $recallTime = new \DateTimeImmutable();
 
-        $this->assertEquals($appChat, $this->imageMessage->getAppChat());
-        $this->assertTrue($this->imageMessage->isSent());
-        $this->assertEquals('img_msg_123', $this->imageMessage->getMsgId());
-        $this->assertEquals($sentAt, $this->imageMessage->getSentAt());
+        $imageMessage->setIsRecalled(true);
+        $imageMessage->setRecalledAt($recallTime);
+
+        $this->assertTrue($imageMessage->isRecalled());
+        $this->assertSame($recallTime, $imageMessage->getRecalledAt());
     }
-} 
+
+    public function testImageMessageInheritance(): void
+    {
+        $imageMessage = new ImageMessage();
+        $this->assertInstanceOf(BaseChatMessage::class, $imageMessage);
+    }
+
+    public function testImageMessageIdentity(): void
+    {
+        $imageMessage = new ImageMessage();
+        $imageMessage->setMediaId('unique_image_123');
+
+        $requestContent = $imageMessage->getRequestContent();
+        $this->assertIsArray($requestContent);
+        $this->assertArrayHasKey('image', $requestContent);
+        $imageData = $requestContent['image'];
+        $this->assertIsArray($imageData);
+        $this->assertArrayHasKey('media_id', $imageData);
+        $this->assertSame('unique_image_123', $imageData['media_id']);
+    }
+}

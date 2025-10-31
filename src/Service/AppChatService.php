@@ -3,25 +3,32 @@
 namespace WechatWorkAppChatBundle\Service;
 
 use Doctrine\ORM\EntityManagerInterface;
+use Monolog\Attribute\WithMonologChannel;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 use Tourze\WechatWorkContracts\AgentInterface;
 use WechatWorkAppChatBundle\Entity\AppChat;
 use WechatWorkAppChatBundle\Repository\AppChatRepository;
 use WechatWorkAppChatBundle\Request\CreateAppChatRequest;
 use WechatWorkAppChatBundle\Request\GetAppChatRequest;
 use WechatWorkAppChatBundle\Request\UpdateAppChatRequest;
-use WechatWorkBundle\Service\WorkService;
+use WechatWorkBundle\Service\WorkServiceInterface;
 
+#[Autoconfigure(public: true)]
+#[WithMonologChannel(channel: 'wechat_work_app_chat')]
 class AppChatService
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly AppChatRepository $appChatRepository,
-        private readonly WorkService $workService,
+        private readonly WorkServiceInterface $workService,
         private readonly LoggerInterface $logger,
     ) {
     }
 
+    /**
+     * @param list<string> $userList
+     */
     public function createAppChat(AgentInterface $agent, string $name, string $owner, array $userList): AppChat
     {
         // 调用企业微信API创建群聊
@@ -30,11 +37,14 @@ class AppChatService
         $request->setName($name);
         $request->setOwner($owner);
         $request->setUserList($userList);
+        /** @var array<string, mixed>|null $response */
         $response = $this->workService->request($request);
 
         $appChat = new AppChat();
         $appChat->setAgent($agent);
-        $appChat->setChatId($response['chatid']);
+        if (is_array($response) && isset($response['chatid']) && is_string($response['chatid'])) {
+            $appChat->setChatId($response['chatid']);
+        }
         $appChat->setName($name);
         $appChat->setOwner($owner);
         $appChat->setUserList($userList);
@@ -70,11 +80,22 @@ class AppChatService
             $request = new GetAppChatRequest();
             $request->setAgent($appChat->getAgent());
             $request->setChatId($appChat->getChatId());
+            /** @var array<string, mixed>|null $response */
             $response = $this->workService->request($request);
 
-            $appChat->setName($response['name']);
-            $appChat->setOwner($response['owner']);
-            $appChat->setUserList($response['userlist']);
+            if (is_array($response)) {
+                if (isset($response['name']) && is_string($response['name'])) {
+                    $appChat->setName($response['name']);
+                }
+                if (isset($response['owner']) && is_string($response['owner'])) {
+                    $appChat->setOwner($response['owner']);
+                }
+                if (isset($response['userlist']) && is_array($response['userlist'])) {
+                    /** @var list<string> $userList */
+                    $userList = array_values($response['userlist']);
+                    $appChat->setUserList($userList);
+                }
+            }
             $appChat->setIsSynced(true);
             $appChat->setLastSyncedAt(new \DateTimeImmutable());
 

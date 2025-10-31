@@ -2,103 +2,127 @@
 
 namespace WechatWorkAppChatBundle\Tests\Entity;
 
-use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use Tourze\PHPUnitDoctrineEntity\AbstractEntityTestCase;
+use Tourze\WechatWorkContracts\AgentInterface;
 use WechatWorkAppChatBundle\Entity\AppChat;
 use WechatWorkAppChatBundle\Entity\TextMessage;
 
-class TextMessageTest extends TestCase
+/**
+ * @internal
+ */
+#[CoversClass(TextMessage::class)]
+final class TextMessageTest extends AbstractEntityTestCase
 {
-    private TextMessage $textMessage;
-    private MockObject $appChat;
+    protected function createEntity(): object
+    {
+        return new TextMessage();
+    }
+
+    /**
+     * @return array<string, array{string, string}>
+     */
+    public static function propertiesProvider(): array
+    {
+        return [
+            'content' => ['content', 'test_value'],
+        ];
+    }
 
     protected function setUp(): void
     {
-        $this->textMessage = new TextMessage();
-        $this->appChat = $this->createMock(AppChat::class);
-        $this->appChat->expects($this->any())->method('getChatId')->willReturn('test_chat_id');
+        parent::setUp();
     }
 
-    public function test_getMsgType_returnsText(): void
+    public function testCreateTextMessage(): void
     {
-        $this->assertEquals('text', $this->textMessage->getMsgType());
+        $agent = $this->createMock(AgentInterface::class);
+
+        $appChat = new AppChat();
+        $appChat->setAgent($agent);
+        $appChat->setChatId('test_chat');
+        $appChat->setName('测试群聊');
+        $appChat->setOwner('owner');
+
+        $textMessage = new TextMessage();
+        $textMessage->setAppChat($appChat);
+        $textMessage->setContent('这是一条测试文本消息');
+        $textMessage->setIsSent(true);
+        $textMessage->setSentAt(new \DateTimeImmutable());
+        $textMessage->setMsgId('test_msg_id');
+
+        $this->assertSame($appChat, $textMessage->getAppChat());
+        $this->assertSame('这是一条测试文本消息', $textMessage->getContent());
+        $this->assertTrue($textMessage->isSent());
+        $this->assertInstanceOf(\DateTimeImmutable::class, $textMessage->getSentAt());
+        $this->assertSame('test_msg_id', $textMessage->getMsgId());
     }
 
-    public function test_getRequestContent_withValidContent(): void
+    public function testGetMsgType(): void
     {
-        $content = 'Test message content';
-        $this->textMessage->setContent($content);
+        $textMessage = new TextMessage();
+        $this->assertSame('text', $textMessage->getMsgType());
+    }
+
+    public function testGetRequestContent(): void
+    {
+        $textMessage = new TextMessage();
+        $textMessage->setContent('测试消息内容');
 
         $expected = [
             'text' => [
-                'content' => $content,
+                'content' => '测试消息内容',
             ],
         ];
 
-        $this->assertEquals($expected, $this->textMessage->getRequestContent());
+        $this->assertSame($expected, $textMessage->getRequestContent());
     }
 
-    public function test_getRequestContent_withEmptyContent(): void
+    public function testTextMessageDefaults(): void
     {
-        $this->textMessage->setContent('');
+        $textMessage = new TextMessage();
 
-        $expected = [
-            'text' => [
-                'content' => '',
-            ],
-        ];
-
-        $this->assertEquals($expected, $this->textMessage->getRequestContent());
+        $this->assertFalse($textMessage->isSent());
+        $this->assertNull($textMessage->getSentAt());
+        $this->assertNull($textMessage->getMsgId());
+        $this->assertFalse($textMessage->isRecalled());
+        $this->assertNull($textMessage->getRecalledAt());
     }
 
-    public function test_getRequestContent_withSpecialCharacters(): void
+    public function testSettersWorkCorrectly(): void
     {
-        $content = '特殊字符测试: @#$%^&*()_+{}|:"<>?';
-        $this->textMessage->setContent($content);
+        $agent = $this->createMock(AgentInterface::class);
 
-        $expected = [
-            'text' => [
-                'content' => $content,
-            ],
-        ];
+        $appChat = new AppChat();
+        $appChat->setAgent($agent);
+        $appChat->setChatId('test_chat');
+        $appChat->setName('测试群聊');
+        $appChat->setOwner('owner');
 
-        $this->assertEquals($expected, $this->textMessage->getRequestContent());
+        $now = new \DateTimeImmutable();
+        $textMessage = new TextMessage();
+
+        $textMessage->setAppChat($appChat);
+        $textMessage->setContent('测试内容');
+        $textMessage->setIsSent(true);
+        $textMessage->setSentAt($now);
+        $textMessage->setMsgId('msg123');
+        $textMessage->setIsRecalled(false);
+        $textMessage->setRecalledAt(null);
+
+        $this->assertSame($appChat, $textMessage->getAppChat());
+        $this->assertSame('测试内容', $textMessage->getContent());
+        $this->assertTrue($textMessage->isSent());
+        $this->assertSame($now, $textMessage->getSentAt());
+        $this->assertSame('msg123', $textMessage->getMsgId());
+        $this->assertFalse($textMessage->isRecalled());
+        $this->assertNull($textMessage->getRecalledAt());
     }
 
-    public function test_setContent_andGetContent(): void
+    public function testStringable(): void
     {
-        $content = 'Test content';
-        $this->textMessage->setContent($content);
-
-        $this->assertEquals($content, $this->textMessage->getContent());
+        $textMessage = new TextMessage();
+        $this->assertIsString((string) $textMessage);
     }
-
-    public function test_setContent_withLongText(): void
-    {
-        $content = str_repeat('A', 10000);
-        $this->textMessage->setContent($content);
-
-        $this->assertEquals($content, $this->textMessage->getContent());
-    }
-
-    public function test_setContent_withUnicodeCharacters(): void
-    {
-        $content = '测试Unicode字符 🎉 emoji 测试';
-        $this->textMessage->setContent($content);
-
-        $this->assertEquals($content, $this->textMessage->getContent());
-    }
-
-    public function test_inheritanceFromBaseChatMessage(): void
-    {
-        /** @var MockObject&AppChat $appChat */
-        $appChat = $this->appChat;
-        $this->textMessage->setAppChat($appChat);
-        $this->textMessage->setIsSent(true);
-        $this->textMessage->setMsgId('test_msg_id');
-
-        $this->assertEquals($appChat, $this->textMessage->getAppChat());
-        $this->assertTrue($this->textMessage->isSent());
-        $this->assertEquals('test_msg_id', $this->textMessage->getMsgId());
-    }
-} 
+}

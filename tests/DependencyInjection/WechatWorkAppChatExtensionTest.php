@@ -2,103 +2,60 @@
 
 namespace WechatWorkAppChatBundle\Tests\DependencyInjection;
 
-use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\CoversClass;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Tourze\PHPUnitSymfonyUnitTest\AbstractDependencyInjectionExtensionTestCase;
 use WechatWorkAppChatBundle\DependencyInjection\WechatWorkAppChatExtension;
 
-class WechatWorkAppChatExtensionTest extends TestCase
+/**
+ * @internal
+ */
+#[CoversClass(WechatWorkAppChatExtension::class)]
+final class WechatWorkAppChatExtensionTest extends AbstractDependencyInjectionExtensionTestCase
 {
-    public function test_extension_class_exists(): void
+    private WechatWorkAppChatExtension $extension;
+
+    private ContainerBuilder $container;
+
+    public function testLoadWithTestEnvironment(): void
     {
-        $this->assertTrue(class_exists(WechatWorkAppChatExtension::class));
+        $this->container->setParameter('kernel.environment', 'test');
+
+        $this->extension->load([], $this->container);
+
+        // 验证扩展加载了配置
+        $this->assertTrue($this->container->hasDefinition('WechatWorkAppChatBundle\Service\AppChatService'));
     }
 
-    public function test_extension_extends_base_extension(): void
+    public function testLoadWithDevEnvironment(): void
     {
-        $reflection = new \ReflectionClass(WechatWorkAppChatExtension::class);
-        $this->assertTrue($reflection->isSubclassOf('Symfony\Component\DependencyInjection\Extension\Extension'));
+        $this->container->setParameter('kernel.environment', 'dev');
+
+        $this->extension->load([], $this->container);
+
+        // 验证扩展加载了配置
+        $this->assertTrue($this->container->hasDefinition('WechatWorkAppChatBundle\Service\AppChatService'));
     }
 
-    public function test_load_method_exists(): void
+    public function testLoadWithProdEnvironment(): void
     {
-        $reflection = new \ReflectionClass(WechatWorkAppChatExtension::class);
-        $this->assertTrue($reflection->hasMethod('load'));
-        
-        $method = $reflection->getMethod('load');
-        $this->assertTrue($method->isPublic());
-        
-        $parameters = $method->getParameters();
-        $this->assertCount(2, $parameters);
-        
-        $this->assertEquals('configs', $parameters[0]->getName());
-        $this->assertEquals('array', (string)$parameters[0]->getType());
-        
-        $this->assertEquals('container', $parameters[1]->getName());
-        $this->assertEquals('Symfony\Component\DependencyInjection\ContainerBuilder', (string)$parameters[1]->getType());
-        
-        // 验证返回类型
-        $returnType = $method->getReturnType();
-        $this->assertNotNull($returnType);
-        $this->assertEquals('void', (string)$returnType);
+        $this->container->setParameter('kernel.environment', 'prod');
+
+        $this->extension->load([], $this->container);
+
+        // 验证扩展加载了基础配置
+        $this->assertTrue($this->container->hasDefinition('WechatWorkAppChatBundle\Service\AppChatService'));
     }
 
-    public function test_load_method_implementation(): void
+    public function testExtensionConfiguration(): void
     {
-        $reflection = new \ReflectionClass(WechatWorkAppChatExtension::class);
-        $method = $reflection->getMethod('load');
-        $methodSource = $this->getMethodSource($method);
-        
-        // 验证方法实现包含关键逻辑
-        $this->assertStringContains('YamlFileLoader', $methodSource);
-        $this->assertStringContains('FileLocator', $methodSource);
-        $this->assertStringContains('/../Resources/config', $methodSource);
-        $this->assertStringContains('services.yaml', $methodSource);
-        $this->assertStringContains('load', $methodSource);
+        $this->assertInstanceOf(WechatWorkAppChatExtension::class, $this->extension);
     }
 
-    public function test_extension_namespace_is_correct(): void
+    protected function setUp(): void
     {
-        $reflection = new \ReflectionClass(WechatWorkAppChatExtension::class);
-        $this->assertEquals('WechatWorkAppChatBundle\DependencyInjection', $reflection->getNamespaceName());
+        parent::setUp();
+        $this->container = new ContainerBuilder();
+        $this->extension = new WechatWorkAppChatExtension();
     }
-
-    public function test_extension_uses_correct_file_path(): void
-    {
-        $reflection = new \ReflectionClass(WechatWorkAppChatExtension::class);
-        $method = $reflection->getMethod('load');
-        $methodSource = $this->getMethodSource($method);
-        
-        // 验证文件路径设置正确
-        $this->assertStringContains('__DIR__', $methodSource);
-        $this->assertStringContains('/../Resources/config', $methodSource);
-    }
-
-    public function test_extension_loads_services_yaml(): void
-    {
-        $reflection = new \ReflectionClass(WechatWorkAppChatExtension::class);
-        $method = $reflection->getMethod('load');
-        $methodSource = $this->getMethodSource($method);
-        
-        // 验证加载services.yaml文件
-        $this->assertStringContains('services.yaml', $methodSource);
-    }
-
-    private function getMethodSource(\ReflectionMethod $method): string
-    {
-        $filename = $method->getFileName();
-        $startLine = $method->getStartLine();
-        $endLine = $method->getEndLine();
-        
-        $lines = file($filename);
-        $methodLines = array_slice($lines, $startLine - 1, $endLine - $startLine + 1);
-        
-        return implode('', $methodLines);
-    }
-
-    private function assertStringContains(string $needle, string $haystack): void
-    {
-        $this->assertTrue(
-            str_contains($haystack, $needle),
-            "Failed asserting that '$haystack' contains '$needle'"
-        );
-    }
-} 
+}

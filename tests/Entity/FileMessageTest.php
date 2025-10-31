@@ -2,92 +2,160 @@
 
 namespace WechatWorkAppChatBundle\Tests\Entity;
 
-use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use Tourze\PHPUnitDoctrineEntity\AbstractEntityTestCase;
+use Tourze\WechatWorkContracts\AgentInterface;
 use WechatWorkAppChatBundle\Entity\AppChat;
+use WechatWorkAppChatBundle\Entity\BaseChatMessage;
 use WechatWorkAppChatBundle\Entity\FileMessage;
 
-class FileMessageTest extends TestCase
+/**
+ * @internal
+ */
+#[CoversClass(FileMessage::class)]
+final class FileMessageTest extends AbstractEntityTestCase
 {
-    private FileMessage $fileMessage;
-    private MockObject $appChat;
+    protected function createEntity(): object
+    {
+        return new FileMessage();
+    }
+
+    /**
+     * @return array<string, array{string, string}>
+     */
+    public static function propertiesProvider(): array
+    {
+        return [
+            'mediaId' => ['mediaId', 'test_value'],
+        ];
+    }
 
     protected function setUp(): void
     {
-        $this->fileMessage = new FileMessage();
-        $this->appChat = $this->createMock(AppChat::class);
-        $this->appChat->expects($this->any())->method('getChatId')->willReturn('test_chat_id');
+        parent::setUp();
     }
 
-    public function test_getMsgType_returnsFile(): void
+    public function testCreateFileMessage(): void
     {
-        $this->assertEquals('file', $this->fileMessage->getMsgType());
+        $agent = $this->createMock(AgentInterface::class);
+
+        $appChat = new AppChat();
+        $appChat->setAgent($agent);
+        $appChat->setChatId('test_chat');
+        $appChat->setName('测试群聊');
+        $appChat->setOwner('owner');
+
+        $fileMessage = new FileMessage();
+        $fileMessage->setAppChat($appChat);
+        $fileMessage->setMediaId('test_media_id_123');
+        $fileMessage->setIsSent(true);
+        $fileMessage->setSentAt(new \DateTimeImmutable());
+        $fileMessage->setMsgId('test_msg_id');
+
+        $this->assertSame($appChat, $fileMessage->getAppChat());
+        $this->assertSame('test_media_id_123', $fileMessage->getMediaId());
+        $this->assertTrue($fileMessage->isSent());
+        $this->assertInstanceOf(\DateTimeImmutable::class, $fileMessage->getSentAt());
+        $this->assertSame('test_msg_id', $fileMessage->getMsgId());
     }
 
-    public function test_getRequestContent_withValidMediaId(): void
+    public function testGetMsgType(): void
     {
-        $mediaId = 'file_media_id_789';
-        $this->fileMessage->setMediaId($mediaId);
+        $fileMessage = new FileMessage();
+        $this->assertSame('file', $fileMessage->getMsgType());
+    }
+
+    public function testGetRequestContent(): void
+    {
+        $fileMessage = new FileMessage();
+        $fileMessage->setMediaId('media_id_file_123');
 
         $expected = [
             'file' => [
-                'media_id' => $mediaId,
+                'media_id' => 'media_id_file_123',
             ],
         ];
 
-        $this->assertEquals($expected, $this->fileMessage->getRequestContent());
+        $this->assertSame($expected, $fileMessage->getRequestContent());
     }
 
-    public function test_getRequestContent_withEmptyMediaId(): void
+    public function testFileMessageDefaults(): void
     {
-        $this->fileMessage->setMediaId('');
+        $fileMessage = new FileMessage();
 
-        $expected = [
-            'file' => [
-                'media_id' => '',
-            ],
-        ];
-
-        $this->assertEquals($expected, $this->fileMessage->getRequestContent());
+        $this->assertFalse($fileMessage->isSent());
+        $this->assertNull($fileMessage->getSentAt());
+        $this->assertNull($fileMessage->getMsgId());
+        $this->assertFalse($fileMessage->isRecalled());
+        $this->assertNull($fileMessage->getRecalledAt());
     }
 
-    public function test_setMediaId_andGetMediaId(): void
+    public function testSettersWorkCorrectly(): void
     {
-        $mediaId = 'file_media_id_abc';
-        $this->fileMessage->setMediaId($mediaId);
+        $agent = $this->createMock(AgentInterface::class);
 
-        $this->assertEquals($mediaId, $this->fileMessage->getMediaId());
+        $appChat = new AppChat();
+        $appChat->setAgent($agent);
+        $appChat->setChatId('test_chat');
+        $appChat->setName('测试群聊');
+        $appChat->setOwner('owner');
+
+        $now = new \DateTimeImmutable();
+        $fileMessage = new FileMessage();
+
+        $fileMessage->setAppChat($appChat);
+        $fileMessage->setMediaId('test_media_id');
+        $fileMessage->setIsSent(true);
+        $fileMessage->setSentAt($now);
+        $fileMessage->setMsgId('msg123');
+        $fileMessage->setIsRecalled(false);
+        $fileMessage->setRecalledAt(null);
+
+        $this->assertSame($appChat, $fileMessage->getAppChat());
+        $this->assertSame('test_media_id', $fileMessage->getMediaId());
+        $this->assertTrue($fileMessage->isSent());
+        $this->assertSame($now, $fileMessage->getSentAt());
+        $this->assertSame('msg123', $fileMessage->getMsgId());
+        $this->assertFalse($fileMessage->isRecalled());
+        $this->assertNull($fileMessage->getRecalledAt());
     }
 
-    public function test_setMediaId_withLongId(): void
+    public function testStringable(): void
     {
-        $mediaId = str_repeat('f', 128);
-        $this->fileMessage->setMediaId($mediaId);
-
-        $this->assertEquals($mediaId, $this->fileMessage->getMediaId());
+        $fileMessage = new FileMessage();
+        $this->assertIsString((string) $fileMessage);
     }
 
-    public function test_setMediaId_withNumericId(): void
+    public function testMediaIdValidation(): void
     {
-        $mediaId = '1234567890';
-        $this->fileMessage->setMediaId($mediaId);
+        $fileMessage = new FileMessage();
 
-        $this->assertEquals($mediaId, $this->fileMessage->getMediaId());
+        // Test with various media ID lengths
+        $shortMediaId = 'short';
+        $fileMessage->setMediaId($shortMediaId);
+        $this->assertSame($shortMediaId, $fileMessage->getMediaId());
+
+        $longMediaId = str_repeat('a', 128);
+        $fileMessage->setMediaId($longMediaId);
+        $this->assertSame($longMediaId, $fileMessage->getMediaId());
     }
 
-    public function test_inheritanceFromBaseChatMessage(): void
+    public function testRecallFunctionality(): void
     {
-        /** @var MockObject&AppChat $appChat */
-        $appChat = $this->appChat;
-        $this->fileMessage->setAppChat($appChat);
-        $this->fileMessage->setIsSent(false);
-        $this->fileMessage->setIsRecalled(true);
-        $recalledAt = new \DateTimeImmutable();
-        $this->fileMessage->setRecalledAt($recalledAt);
+        $fileMessage = new FileMessage();
+        $recallTime = new \DateTimeImmutable();
 
-        $this->assertEquals($appChat, $this->fileMessage->getAppChat());
-        $this->assertFalse($this->fileMessage->isSent());
-        $this->assertTrue($this->fileMessage->isRecalled());
-        $this->assertEquals($recalledAt, $this->fileMessage->getRecalledAt());
+        $fileMessage->setIsRecalled(true);
+        $fileMessage->setRecalledAt($recallTime);
+
+        $this->assertTrue($fileMessage->isRecalled());
+        $this->assertSame($recallTime, $fileMessage->getRecalledAt());
     }
-} 
+
+    public function testFileMessageInheritance(): void
+    {
+        $fileMessage = new FileMessage();
+        $this->assertInstanceOf(BaseChatMessage::class, $fileMessage);
+    }
+}

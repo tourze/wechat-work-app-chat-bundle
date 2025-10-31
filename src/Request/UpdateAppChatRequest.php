@@ -15,8 +15,14 @@ class UpdateAppChatRequest extends ApiRequest
 
     private string $owner;
 
+    /**
+     * @var list<string>
+     */
     private array $addUserList = [];
 
+    /**
+     * @var list<string>
+     */
     private array $delUserList = [];
 
     public function getRequestPath(): string
@@ -24,6 +30,9 @@ class UpdateAppChatRequest extends ApiRequest
         return '/cgi-bin/appchat/update';
     }
 
+    /**
+     * @return array<string, mixed>|null
+     */
     public function getRequestOptions(): ?array
     {
         return [
@@ -67,21 +76,33 @@ class UpdateAppChatRequest extends ApiRequest
         $this->owner = $owner;
     }
 
+    /**
+     * @return list<string>
+     */
     public function getAddUserList(): array
     {
         return $this->addUserList;
     }
 
+    /**
+     * @param list<string> $addUserList
+     */
     public function setAddUserList(array $addUserList): void
     {
         $this->addUserList = $addUserList;
     }
 
+    /**
+     * @return list<string>
+     */
     public function getDelUserList(): array
     {
         return $this->delUserList;
     }
 
+    /**
+     * @param list<string> $delUserList
+     */
     public function setDelUserList(array $delUserList): void
     {
         $this->delUserList = $delUserList;

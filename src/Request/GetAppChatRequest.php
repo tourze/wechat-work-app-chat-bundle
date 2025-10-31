@@ -16,6 +16,9 @@ class GetAppChatRequest extends ApiRequest
         return '/cgi-bin/appchat/get';
     }
 
+    /**
+     * @return array<string, mixed>|null
+     */
     public function getRequestOptions(): ?array
     {
         return [

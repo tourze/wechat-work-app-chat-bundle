@@ -4,6 +4,7 @@ namespace WechatWorkAppChatBundle\Entity;
 
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 use WechatWorkAppChatBundle\Repository\MarkdownMessageRepository;
 
 #[ORM\Entity(repositoryClass: MarkdownMessageRepository::class)]
@@ -11,6 +12,8 @@ use WechatWorkAppChatBundle\Repository\MarkdownMessageRepository;
 class MarkdownMessage extends BaseChatMessage
 {
     #[ORM\Column(type: Types::TEXT, options: ['comment' => '消息内容'])]
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 4096)]
     private string $content;
 
     public function getMsgType(): string
@@ -18,6 +21,9 @@ class MarkdownMessage extends BaseChatMessage
         return 'markdown';
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function getRequestContent(): array
     {
         return [
@@ -32,11 +38,9 @@ class MarkdownMessage extends BaseChatMessage
         return $this->content;
     }
 
-    public function setContent(string $content): self
+    public function setContent(string $content): void
     {
         $this->content = $content;
-
-        return $this;
     }
 
     public function __toString(): string

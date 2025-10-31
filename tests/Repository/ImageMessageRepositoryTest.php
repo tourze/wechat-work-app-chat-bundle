@@ -2,110 +2,166 @@
 
 namespace WechatWorkAppChatBundle\Tests\Repository;
 
-use PHPUnit\Framework\TestCase;
+use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
+use Tourze\PHPUnitSymfonyKernelTest\AbstractRepositoryTestCase;
+use Tourze\WechatWorkContracts\AgentInterface;
+use WechatWorkAppChatBundle\Entity\AppChat;
+use WechatWorkAppChatBundle\Entity\ImageMessage;
 use WechatWorkAppChatBundle\Repository\ImageMessageRepository;
+use WechatWorkBundle\Entity\Agent;
+use WechatWorkBundle\Entity\Corp;
 
-class ImageMessageRepositoryTest extends TestCase
+/**
+ * @internal
+ */
+#[CoversClass(ImageMessageRepository::class)]
+#[RunTestsInSeparateProcesses]
+final class ImageMessageRepositoryTest extends AbstractRepositoryTestCase
 {
-    public function test_repository_class_exists(): void
+    private ImageMessageRepository $repository;
+
+    protected function onSetUp(): void
     {
-        $this->assertTrue(class_exists(ImageMessageRepository::class));
+        $this->repository = self::getService(ImageMessageRepository::class);
     }
 
-    public function test_repository_extends_service_entity_repository(): void
+    public function testRepositoryService(): void
     {
-        $reflection = new \ReflectionClass(ImageMessageRepository::class);
-        $this->assertTrue($reflection->isSubclassOf('Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository'));
+        $this->assertInstanceOf(ImageMessageRepository::class, $this->repository);
     }
 
-    public function test_findUnsent_method_exists(): void
+    public function testFindUnsent(): void
     {
-        $reflection = new \ReflectionClass(ImageMessageRepository::class);
-        $this->assertTrue($reflection->hasMethod('findUnsent'));
-        
-        $method = $reflection->getMethod('findUnsent');
-        $this->assertTrue($method->isPublic());
-        
-        $parameters = $method->getParameters();
-        $this->assertCount(0, $parameters);
+        // Test the method exists and returns an array
+        $results = $this->repository->findUnsent();
+        $this->assertIsArray($results);
+
+        // Since SendMessageListener might auto-send messages in test environment,
+        // we just verify the method works correctly without asserting specific count
+        foreach ($results as $result) {
+            $this->assertInstanceOf(ImageMessage::class, $result);
+            $this->assertFalse($result->isSent());
+        }
     }
 
-    public function test_findUnsent_return_type(): void
+    public function testSave(): void
     {
-        $reflection = new \ReflectionClass(ImageMessageRepository::class);
-        $method = $reflection->getMethod('findUnsent');
-        $returnType = $method->getReturnType();
-        
-        $this->assertNotNull($returnType);
-        $this->assertEquals('array', (string)$returnType);
+        $appChat = $this->createAppChat();
+
+        $imageMessage = new ImageMessage();
+        $imageMessage->setAppChat($appChat);
+        $imageMessage->setMediaId('save_test_image_media_id');
+
+        $this->repository->save($imageMessage);
+
+        $found = $this->repository->find($imageMessage->getId());
+        $this->assertInstanceOf(ImageMessage::class, $found);
+        $this->assertEquals('save_test_image_media_id', $found->getMediaId());
     }
 
-    public function test_repository_has_correct_entity_class(): void
+    public function testRemove(): void
     {
-        $reflection = new \ReflectionClass(ImageMessageRepository::class);
-        $constructor = $reflection->getConstructor();
-        $constructorSource = $this->getMethodSource($constructor);
-        
-        // 验证构造函数调用parent::__construct时传递了正确的实体类
-        $this->assertStringContains('ImageMessage::class', $constructorSource);
+        $appChat = $this->createAppChat();
+
+        $imageMessage = new ImageMessage();
+        $imageMessage->setAppChat($appChat);
+        $imageMessage->setMediaId('remove_test_image_media_id');
+
+        $this->repository->save($imageMessage);
+        $id = $imageMessage->getId();
+
+        $this->repository->remove($imageMessage);
+
+        $found = $this->repository->find($id);
+        $this->assertNull($found);
     }
 
-    public function test_inherited_methods_availability(): void
+    public function testCountByAssociationAppChatShouldReturnCorrectNumber(): void
     {
-        $reflection = new \ReflectionClass(ImageMessageRepository::class);
-        
-        // 测试继承的基本方法是否可用
-        $this->assertTrue($reflection->hasMethod('find'));
-        $this->assertTrue($reflection->hasMethod('findOneBy'));
-        $this->assertTrue($reflection->hasMethod('findAll'));
-        $this->assertTrue($reflection->hasMethod('findBy'));
+        $appChat1 = $this->createAppChat();
+        $appChat2 = $this->createAppChat();
+
+        $imageMessage1 = new ImageMessage();
+        $imageMessage1->setAppChat($appChat1);
+        $imageMessage1->setMediaId('count_image_chat1_media');
+        $this->repository->save($imageMessage1);
+
+        $imageMessage2 = new ImageMessage();
+        $imageMessage2->setAppChat($appChat2);
+        $imageMessage2->setMediaId('count_image_chat2_media');
+        $this->repository->save($imageMessage2);
+
+        $count = $this->repository->count(['appChat' => $appChat1]);
+        $this->assertEquals(1, $count);
     }
 
-    public function test_findUnsent_method_implementation(): void
+    private function createTestAgent(): AgentInterface
     {
-        $reflection = new \ReflectionClass(ImageMessageRepository::class);
-        $method = $reflection->getMethod('findUnsent');
-        $methodSource = $this->getMethodSource($method);
-        
-        // 验证方法实现使用了正确的查询构建
-        $this->assertStringContains('createQueryBuilder', $methodSource);
-        $this->assertStringContains('im', $methodSource); // 查询别名
-        $this->assertStringContains('isSent', $methodSource);
-        $this->assertStringContains('false', $methodSource);
-        $this->assertStringContains('orderBy', $methodSource);
-        $this->assertStringContains('ASC', $methodSource);
-        $this->assertStringContains('getQuery', $methodSource);
-        $this->assertStringContains('getResult', $methodSource);
+        $corp = new Corp();
+        $corp->setName('Test Corp ' . uniqid());
+        $corp->setCorpId('test_corp_id_' . uniqid());
+        $corp->setCorpSecret('test_corp_secret');
+        self::getEntityManager()->persist($corp);
+
+        $agent = new Agent();
+        $agent->setName('Test Agent ' . uniqid());
+        $agent->setAgentId('test_agent_' . uniqid());
+        $agent->setSecret('test_secret');
+        $agent->setCorp($corp);
+        self::getEntityManager()->persist($agent);
+
+        return $agent;
     }
 
-    public function test_findUnsent_has_correct_order_by(): void
+    private function createAppChat(): AppChat
     {
-        $reflection = new \ReflectionClass(ImageMessageRepository::class);
-        $method = $reflection->getMethod('findUnsent');
-        $methodSource = $this->getMethodSource($method);
-        
-        // 验证排序是按照id升序
-        $this->assertStringContains('im.id', $methodSource);
-        $this->assertStringContains('ASC', $methodSource);
+        $agent = $this->createTestAgent();
+
+        $appChat = new AppChat();
+        $appChat->setAgent($agent);
+        $appChat->setChatId('test_chat_id_' . uniqid());
+        $appChat->setName('Test Chat');
+        $appChat->setOwner('test_owner');
+        $appChat->setUserList(['user1', 'user2']);
+
+        self::getEntityManager()->persist($appChat);
+        self::getEntityManager()->flush();
+
+        return $appChat;
     }
 
-    private function getMethodSource(\ReflectionMethod $method): string
+    public function testFindOneByAssociationAppChatShouldReturnMatchingEntity(): void
     {
-        $filename = $method->getFileName();
-        $startLine = $method->getStartLine();
-        $endLine = $method->getEndLine();
-        
-        $lines = file($filename);
-        $methodLines = array_slice($lines, $startLine - 1, $endLine - $startLine + 1);
-        
-        return implode('', $methodLines);
+        $appChat = $this->createAppChat();
+
+        $imageMessage = new ImageMessage();
+        $imageMessage->setAppChat($appChat);
+        $imageMessage->setMediaId('findone_association_image_media_id');
+        $this->repository->save($imageMessage);
+
+        $result = $this->repository->findOneBy(['appChat' => $appChat]);
+        $this->assertInstanceOf(ImageMessage::class, $result);
+        $this->assertEquals($appChat->getId(), $result->getAppChat()->getId());
     }
 
-    private function assertStringContains(string $needle, string $haystack): void
+    protected function createNewEntity(): object
     {
-        $this->assertTrue(
-            str_contains($haystack, $needle),
-            "Failed asserting that '$haystack' contains '$needle'"
-        );
+        $appChat = $this->createAppChat();
+
+        $entity = new ImageMessage();
+        $entity->setAppChat($appChat);
+        $entity->setMediaId('test_image_media_id_' . uniqid());
+
+        return $entity;
     }
-} 
+
+    /**
+     * @return ServiceEntityRepository<ImageMessage>
+     */
+    protected function getRepository(): ServiceEntityRepository
+    {
+        return $this->repository;
+    }
+}

@@ -2,110 +2,183 @@
 
 namespace WechatWorkAppChatBundle\Tests\Request;
 
-use PHPUnit\Framework\TestCase;
+use HttpClientBundle\Tests\Request\RequestTestCase;
+use PHPUnit\Framework\Attributes\CoversClass;
+use Tourze\WechatWorkContracts\AgentInterface;
 use WechatWorkAppChatBundle\Request\GetAppChatRequest;
-use WechatWorkBundle\Entity\Agent;
-use WechatWorkBundle\Entity\Corp;
 
-class GetAppChatRequestTest extends TestCase
+/**
+ * @internal
+ */
+#[CoversClass(GetAppChatRequest::class)]
+final class GetAppChatRequestTest extends RequestTestCase
 {
-    private GetAppChatRequest $request;
-    private Agent $agent;
-
-    protected function setUp(): void
+    public function testCreateRequest(): void
     {
-        $this->request = new GetAppChatRequest();
-        
-        $corp = new Corp();
-        $this->agent = new Agent();
-        $this->agent->setCorp($corp);
-        $this->agent->setAgentId('test_agent_id');
+        $agent = $this->createMock(AgentInterface::class);
+
+        $request = new GetAppChatRequest();
+        $request->setAgent($agent);
+        $request->setChatId('test_chat_123');
+
+        $this->assertSame($agent, $request->getAgent());
+        $this->assertSame('test_chat_123', $request->getChatId());
     }
 
-    public function test_getRequestPath(): void
+    public function testGetRequestPath(): void
     {
-        $this->assertEquals('/cgi-bin/appchat/get', $this->request->getRequestPath());
+        $request = new GetAppChatRequest();
+        $this->assertSame('/cgi-bin/appchat/get', $request->getRequestPath());
     }
 
-    public function test_setChatId_andGetChatId(): void
+    public function testGetRequestOptions(): void
     {
-        $chatId = 'test_chat_123456';
-        $this->request->setChatId($chatId);
-
-        $this->assertEquals($chatId, $this->request->getChatId());
-    }
-
-    public function test_setChatId_withSpecialCharacters(): void
-    {
-        $chatId = 'chat-id_with.special_chars123';
-        $this->request->setChatId($chatId);
-
-        $this->assertEquals($chatId, $this->request->getChatId());
-    }
-
-    public function test_getRequestOptions_withValidChatId(): void
-    {
-        $chatId = 'valid_chat_id_789';
-
-        $this->request->setAgent($this->agent);
-        $this->request->setChatId($chatId);
+        $request = new GetAppChatRequest();
+        $request->setChatId('sample_chat_id');
 
         $expected = [
             'query' => [
-                'chatid' => $chatId,
+                'chatid' => 'sample_chat_id',
             ],
         ];
 
-        $this->assertEquals($expected, $this->request->getRequestOptions());
+        $this->assertSame($expected, $request->getRequestOptions());
     }
 
-    public function test_getRequestOptions_withEmptyChatId(): void
+    public function testChatIdWithSpecialCharacters(): void
     {
-        $chatId = '';
+        $request = new GetAppChatRequest();
+        $chatId = 'chat_with-special.chars_123';
+        $request->setChatId($chatId);
 
-        $this->request->setAgent($this->agent);
-        $this->request->setChatId($chatId);
-
-        $expected = [
-            'query' => [
-                'chatid' => $chatId,
-            ],
-        ];
-
-        $this->assertEquals($expected, $this->request->getRequestOptions());
+        $options = $request->getRequestOptions();
+        $this->assertNotNull($options);
+        $this->assertArrayHasKey('query', $options);
+        $this->assertIsArray($options['query']);
+        $this->assertSame($chatId, $options['query']['chatid']);
     }
 
-    public function test_getRequestOptions_withLongChatId(): void
+    public function testChatIdWithNumbers(): void
     {
-        $chatId = str_repeat('a', 32);
+        $request = new GetAppChatRequest();
+        $chatId = '1234567890';
+        $request->setChatId($chatId);
 
-        $this->request->setAgent($this->agent);
-        $this->request->setChatId($chatId);
-
-        $expected = [
-            'query' => [
-                'chatid' => $chatId,
-            ],
-        ];
-
-        $this->assertEquals($expected, $this->request->getRequestOptions());
+        $options = $request->getRequestOptions();
+        $this->assertNotNull($options);
+        $this->assertArrayHasKey('query', $options);
+        $this->assertIsArray($options['query']);
+        $this->assertSame($chatId, $options['query']['chatid']);
     }
 
-    public function test_agentAware_trait(): void
+    public function testLongChatId(): void
     {
-        $this->request->setAgent($this->agent);
+        $request = new GetAppChatRequest();
+        $chatId = str_repeat('a', 100); // Very long chat ID
+        $request->setChatId($chatId);
 
-        $this->assertEquals($this->agent, $this->request->getAgent());
+        $options = $request->getRequestOptions();
+        $this->assertNotNull($options);
+        $this->assertArrayHasKey('query', $options);
+        $this->assertIsArray($options['query']);
+        $this->assertSame($chatId, $options['query']['chatid']);
     }
 
-    public function test_chaining_methods(): void
+    public function testShortChatId(): void
     {
-        $chatId = 'chain_test_chat';
+        $request = new GetAppChatRequest();
+        $chatId = 'a';
+        $request->setChatId($chatId);
 
-        $this->request->setAgent($this->agent);
-        $this->request->setChatId($chatId);
-
-        $this->assertEquals($this->agent, $this->request->getAgent());
-        $this->assertEquals($chatId, $this->request->getChatId());
+        $options = $request->getRequestOptions();
+        $this->assertNotNull($options);
+        $this->assertArrayHasKey('query', $options);
+        $this->assertIsArray($options['query']);
+        $this->assertSame($chatId, $options['query']['chatid']);
     }
-} 
+
+    public function testRequestStructure(): void
+    {
+        $request = new GetAppChatRequest();
+        $request->setChatId('structure_test');
+
+        $options = $request->getRequestOptions();
+
+        $this->assertNotNull($options);
+        $this->assertIsArray($options);
+        $this->assertArrayHasKey('query', $options);
+
+        /** @var array<string, mixed> $query */
+        $query = $options['query'];
+        $this->assertArrayHasKey('chatid', $query);
+        $this->assertIsString($query['chatid']);
+    }
+
+    public function testChatIdConsistency(): void
+    {
+        $request = new GetAppChatRequest();
+        $originalChatId = 'consistency_test_chat';
+        $request->setChatId($originalChatId);
+
+        $retrievedChatId = $request->getChatId();
+        $this->assertSame($originalChatId, $retrievedChatId);
+        $this->assertIsString($retrievedChatId);
+    }
+
+    public function testChatIdWithUnderscores(): void
+    {
+        $request = new GetAppChatRequest();
+        $chatId = 'chat_with_multiple_underscores_here';
+        $request->setChatId($chatId);
+
+        $options = $request->getRequestOptions();
+        $this->assertNotNull($options);
+        $this->assertArrayHasKey('query', $options);
+        $this->assertIsArray($options['query']);
+        $this->assertSame($chatId, $options['query']['chatid']);
+    }
+
+    public function testChatIdWithHyphens(): void
+    {
+        $request = new GetAppChatRequest();
+        $chatId = 'chat-with-multiple-hyphens-here';
+        $request->setChatId($chatId);
+
+        $options = $request->getRequestOptions();
+        $this->assertNotNull($options);
+        $this->assertArrayHasKey('query', $options);
+        $this->assertIsArray($options['query']);
+        $this->assertSame($chatId, $options['query']['chatid']);
+    }
+
+    public function testAlphanumericChatId(): void
+    {
+        $request = new GetAppChatRequest();
+        $chatId = 'chat123ABC456def';
+        $request->setChatId($chatId);
+
+        $options = $request->getRequestOptions();
+        $this->assertNotNull($options);
+        $this->assertArrayHasKey('query', $options);
+        $this->assertIsArray($options['query']);
+        $this->assertSame($chatId, $options['query']['chatid']);
+    }
+
+    public function testQueryParamStructure(): void
+    {
+        $request = new GetAppChatRequest();
+        $request->setChatId('query_test');
+
+        $options = $request->getRequestOptions();
+        $this->assertNotNull($options);
+        $this->assertArrayHasKey('query', $options);
+        $this->assertIsArray($options['query']);
+        $query = $options['query'];
+
+        // Ensure only the chatid parameter is present
+        $this->assertCount(1, $query);
+        $this->assertArrayHasKey('chatid', $query);
+        $this->assertArrayNotHasKey('name', $query);
+        $this->assertArrayNotHasKey('owner', $query);
+    }
+}

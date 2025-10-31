@@ -4,14 +4,13 @@ namespace WechatWorkAppChatBundle\Repository;
 
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
+use Tourze\PHPUnitSymfonyKernelTest\Attribute\AsRepository;
 use WechatWorkAppChatBundle\Entity\MarkdownMessage;
 
 /**
- * @method MarkdownMessage|null find($id, $lockMode = null, $lockVersion = null)
- * @method MarkdownMessage|null findOneBy(array $criteria, array $orderBy = null)
- * @method MarkdownMessage[]    findAll()
- * @method MarkdownMessage[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ * @extends ServiceEntityRepository<MarkdownMessage>
  */
+#[AsRepository(entityClass: MarkdownMessage::class)]
 class MarkdownMessageRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
@@ -19,13 +18,36 @@ class MarkdownMessageRepository extends ServiceEntityRepository
         parent::__construct($registry, MarkdownMessage::class);
     }
 
+    /**
+     * @return MarkdownMessage[]
+     */
     public function findUnsent(): array
     {
+        /** @var array<MarkdownMessage> */
         return $this->createQueryBuilder('mm')
             ->andWhere('mm.isSent = :isSent')
             ->setParameter('isSent', false)
             ->orderBy('mm.id', 'ASC')
             ->getQuery()
-            ->getResult();
+            ->getResult()
+        ;
+    }
+
+    public function save(MarkdownMessage $entity, bool $flush = true): void
+    {
+        $this->getEntityManager()->persist($entity);
+
+        if ($flush) {
+            $this->getEntityManager()->flush();
+        }
+    }
+
+    public function remove(MarkdownMessage $entity, bool $flush = true): void
+    {
+        $this->getEntityManager()->remove($entity);
+
+        if ($flush) {
+            $this->getEntityManager()->flush();
+        }
     }
 }

@@ -2,123 +2,127 @@
 
 namespace WechatWorkAppChatBundle\Tests\Command;
 
-use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
+use PHPUnit\Framework\MockObject\MockObject;
+use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Tester\CommandTester;
+use Tourze\PHPUnitSymfonyKernelTest\AbstractCommandTestCase;
 use WechatWorkAppChatBundle\Command\SendUnsentMessagesCommand;
+use WechatWorkAppChatBundle\Service\MessageService;
 
-class SendUnsentMessagesCommandTest extends TestCase
+/**
+ * @internal
+ */
+#[CoversClass(SendUnsentMessagesCommand::class)]
+#[RunTestsInSeparateProcesses]
+final class SendUnsentMessagesCommandTest extends AbstractCommandTestCase
 {
-    public function test_command_class_exists(): void
+    /** @var MockObject&MessageService */
+    private MessageService $messageService;
+
+    private SendUnsentMessagesCommand $command;
+
+    public function testCommandName(): void
     {
-        $this->assertTrue(class_exists(SendUnsentMessagesCommand::class));
+        $this->assertSame('wechat-work:app-chat:send-unsent', SendUnsentMessagesCommand::NAME);
+        $this->assertSame('wechat-work:app-chat:send-unsent', $this->command->getName());
     }
 
-    public function test_command_extends_base_command(): void
+    public function testCommandDescription(): void
     {
-        $reflection = new \ReflectionClass(SendUnsentMessagesCommand::class);
-        $this->assertTrue($reflection->isSubclassOf('Symfony\Component\Console\Command\Command'));
+        $this->assertSame('发送未发送的企业微信群聊消息', $this->command->getDescription());
     }
 
-    public function test_command_has_required_constructor_parameter(): void
+    public function testSuccessfulExecution(): void
     {
-        $reflection = new \ReflectionClass(SendUnsentMessagesCommand::class);
-        $constructor = $reflection->getConstructor();
-        
-        $this->assertNotNull($constructor);
-        
-        $parameters = $constructor->getParameters();
-        $this->assertCount(1, $parameters);
-        
-        $this->assertEquals('messageService', $parameters[0]->getName());
-        $this->assertEquals('WechatWorkAppChatBundle\Service\MessageService', (string)$parameters[0]->getType());
+        $this->messageService
+            ->expects($this->once())
+            ->method('sendUnsent')
+        ;
+
+        $commandTester = new CommandTester($this->command);
+        $exitCode = $commandTester->execute([]);
+
+        $this->assertSame(Command::SUCCESS, $exitCode);
+
+        $output = $commandTester->getDisplay();
+        $this->assertStringContainsString('开始发送未发送的企业微信群聊消息...', $output);
+        $this->assertStringContainsString('发送完成', $output);
     }
 
-    public function test_command_has_attribute_configuration(): void
+    public function testFailedExecution(): void
     {
-        $reflection = new \ReflectionClass(SendUnsentMessagesCommand::class);
-        $attributes = $reflection->getAttributes();
-        
-        $this->assertNotEmpty($attributes);
-        
-        $asCommandAttribute = null;
-        foreach ($attributes as $attribute) {
-            if ($attribute->getName() === 'Symfony\Component\Console\Attribute\AsCommand') {
-                $asCommandAttribute = $attribute;
-                break;
-            }
-        }
-        
-        $this->assertNotNull($asCommandAttribute);
-        
-        $arguments = $asCommandAttribute->getArguments();
-        $this->assertEquals('wechat-work:app-chat:send-unsent', $arguments['name']);
-        $this->assertEquals('发送未发送的企业微信群聊消息', $arguments['description']);
+        $exception = new \RuntimeException('发送失败');
+
+        $this->messageService
+            ->expects($this->once())
+            ->method('sendUnsent')
+            ->willThrowException($exception)
+        ;
+
+        $commandTester = new CommandTester($this->command);
+        $exitCode = $commandTester->execute([]);
+
+        $this->assertSame(Command::FAILURE, $exitCode);
+
+        $output = $commandTester->getDisplay();
+        $this->assertStringContainsString('开始发送未发送的企业微信群聊消息...', $output);
+        $this->assertStringContainsString('发送失败：发送失败', $output);
     }
 
-    public function test_execute_method_exists(): void
+    public function testCommandWithDifferentExceptionTypes(): void
     {
-        $reflection = new \ReflectionClass(SendUnsentMessagesCommand::class);
-        $this->assertTrue($reflection->hasMethod('execute'));
-        
-        $method = $reflection->getMethod('execute');
-        $this->assertTrue($method->isProtected());
-        
-        $parameters = $method->getParameters();
-        $this->assertCount(2, $parameters);
-        
-        $this->assertEquals('input', $parameters[0]->getName());
-        $this->assertEquals('output', $parameters[1]->getName());
-        
-        // 验证返回类型
-        $returnType = $method->getReturnType();
-        $this->assertNotNull($returnType);
-        $this->assertEquals('int', (string)$returnType);
+        $exception = new \InvalidArgumentException('无效参数');
+
+        $this->messageService
+            ->expects($this->once())
+            ->method('sendUnsent')
+            ->willThrowException($exception)
+        ;
+
+        $commandTester = new CommandTester($this->command);
+        $exitCode = $commandTester->execute([]);
+
+        $this->assertSame(Command::FAILURE, $exitCode);
+
+        $output = $commandTester->getDisplay();
+        $this->assertStringContainsString('发送失败：无效参数', $output);
     }
 
-    public function test_execute_method_implementation(): void
+    public function testCommandWithEmptyExceptionMessage(): void
     {
-        $reflection = new \ReflectionClass(SendUnsentMessagesCommand::class);
-        $method = $reflection->getMethod('execute');
-        $methodSource = $this->getMethodSource($method);
-        
-        // 验证方法实现包含关键逻辑
-        $this->assertStringContains('writeln', $methodSource);
-        $this->assertStringContains('messageService', $methodSource);
-        $this->assertStringContains('sendUnsent', $methodSource);
-        $this->assertStringContains('try', $methodSource);
-        $this->assertStringContains('catch', $methodSource);
-        $this->assertStringContains('Command::SUCCESS', $methodSource);
-        $this->assertStringContains('Command::FAILURE', $methodSource);
+        $exception = new \Exception('');
+
+        $this->messageService
+            ->expects($this->once())
+            ->method('sendUnsent')
+            ->willThrowException($exception)
+        ;
+
+        $commandTester = new CommandTester($this->command);
+        $exitCode = $commandTester->execute([]);
+
+        $this->assertSame(Command::FAILURE, $exitCode);
+
+        $output = $commandTester->getDisplay();
+        $this->assertStringContainsString('发送失败：', $output);
     }
 
-    public function test_command_handles_exceptions(): void
+    public function testCommandIsInstanceOfCommand(): void
     {
-        $reflection = new \ReflectionClass(SendUnsentMessagesCommand::class);
-        $method = $reflection->getMethod('execute');
-        $methodSource = $this->getMethodSource($method);
-        
-        // 验证异常处理
-        $this->assertStringContains('Throwable', $methodSource);
-        $this->assertStringContains('getMessage', $methodSource);
-        $this->assertStringContains('发送失败', $methodSource);
+        $this->assertInstanceOf(Command::class, $this->command);
     }
 
-    private function getMethodSource(\ReflectionMethod $method): string
+    protected function getCommandTester(): CommandTester
     {
-        $filename = $method->getFileName();
-        $startLine = $method->getStartLine();
-        $endLine = $method->getEndLine();
-        
-        $lines = file($filename);
-        $methodLines = array_slice($lines, $startLine - 1, $endLine - $startLine + 1);
-        
-        return implode('', $methodLines);
+        return new CommandTester(self::getService(SendUnsentMessagesCommand::class));
     }
 
-    private function assertStringContains(string $needle, string $haystack): void
+    protected function onSetUp(): void
     {
-        $this->assertTrue(
-            str_contains($haystack, $needle),
-            "Failed asserting that '$haystack' contains '$needle'"
-        );
+        $this->messageService = $this->createMock(MessageService::class);
+        self::getContainer()->set(MessageService::class, $this->messageService);
+        $this->command = self::getService(SendUnsentMessagesCommand::class);
     }
-} 
+}

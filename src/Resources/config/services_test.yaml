@@ -1,0 +1,20 @@
+services:
+  # default configuration for services in *this* file
+  _defaults:
+    autowire: true      # Automatically injects dependencies in your services.
+    autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+    public: true
+
+  WechatWorkAppChatBundle\DataFixtures\:
+    resource: '../../DataFixtures/'
+
+  # Mock WorkService for testing
+  WechatWorkBundle\Service\WorkService:
+    class: WechatWorkAppChatBundle\Tests\Service\MockWorkService
+    public: true
+
+  # Register test classes for autoload
+  WechatWorkAppChatBundle\Tests\Service\:
+    resource: '../../../tests/Service/'
+
+  

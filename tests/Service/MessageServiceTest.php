@@ -2,268 +2,193 @@
 
 namespace WechatWorkAppChatBundle\Tests\Service;
 
-use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
+use Tourze\PHPUnitSymfonyKernelTest\AbstractIntegrationTestCase;
+use Tourze\WechatWorkContracts\AgentInterface;
+use WechatWorkAppChatBundle\Entity\AppChat;
+use WechatWorkAppChatBundle\Entity\FileMessage;
+use WechatWorkAppChatBundle\Entity\ImageMessage;
+use WechatWorkAppChatBundle\Entity\MarkdownMessage;
+use WechatWorkAppChatBundle\Entity\TextMessage;
 use WechatWorkAppChatBundle\Service\MessageService;
+use WechatWorkBundle\Entity\Agent;
+use WechatWorkBundle\Entity\Corp;
 
-class MessageServiceTest extends TestCase
+/**
+ * @internal
+ */
+#[CoversClass(MessageService::class)]
+#[RunTestsInSeparateProcesses]
+final class MessageServiceTest extends AbstractIntegrationTestCase
 {
-    public function test_service_class_exists(): void
+    private MessageService $messageService;
+
+    private AgentInterface $agent;
+
+    private AppChat $appChat;
+
+    public function testSendText(): void
     {
-        $this->assertTrue(class_exists(MessageService::class));
+        $content = '测试文本消息';
+
+        $result = $this->messageService->sendText($this->appChat, $content);
+
+        $this->assertInstanceOf(TextMessage::class, $result);
+        $this->assertSame($this->appChat, $result->getAppChat());
+        $this->assertSame($content, $result->getContent());
     }
 
-    public function test_service_has_required_constructor_parameters(): void
+    public function testSendMarkdown(): void
     {
-        $reflection = new \ReflectionClass(MessageService::class);
-        $constructor = $reflection->getConstructor();
-        
-        $this->assertNotNull($constructor);
-        
-        $parameters = $constructor->getParameters();
-        $this->assertCount(7, $parameters);
-        
-        // 验证构造函数参数类型
-        $this->assertEquals('entityManager', $parameters[0]->getName());
-        $this->assertEquals('Doctrine\ORM\EntityManagerInterface', (string)$parameters[0]->getType());
-        
-        $this->assertEquals('textMessageRepository', $parameters[1]->getName());
-        $this->assertEquals('WechatWorkAppChatBundle\Repository\TextMessageRepository', (string)$parameters[1]->getType());
-        
-        $this->assertEquals('markdownMessageRepository', $parameters[2]->getName());
-        $this->assertEquals('WechatWorkAppChatBundle\Repository\MarkdownMessageRepository', (string)$parameters[2]->getType());
-        
-        $this->assertEquals('imageMessageRepository', $parameters[3]->getName());
-        $this->assertEquals('WechatWorkAppChatBundle\Repository\ImageMessageRepository', (string)$parameters[3]->getType());
-        
-        $this->assertEquals('fileMessageRepository', $parameters[4]->getName());
-        $this->assertEquals('WechatWorkAppChatBundle\Repository\FileMessageRepository', (string)$parameters[4]->getType());
-        
-        $this->assertEquals('workService', $parameters[5]->getName());
-        $this->assertEquals('WechatWorkBundle\Service\WorkService', (string)$parameters[5]->getType());
-        
-        $this->assertEquals('logger', $parameters[6]->getName());
-        $this->assertEquals('Psr\Log\LoggerInterface', (string)$parameters[6]->getType());
+        $content = '# 标题\n\n这是**加粗**内容';
+
+        $result = $this->messageService->sendMarkdown($this->appChat, $content);
+
+        $this->assertInstanceOf(MarkdownMessage::class, $result);
+        $this->assertSame($this->appChat, $result->getAppChat());
+        $this->assertSame($content, $result->getContent());
     }
 
-    public function test_sendText_method_exists(): void
+    public function testSendImage(): void
     {
-        $reflection = new \ReflectionClass(MessageService::class);
-        $this->assertTrue($reflection->hasMethod('sendText'));
-        
-        $method = $reflection->getMethod('sendText');
-        $this->assertTrue($method->isPublic());
-        
-        $parameters = $method->getParameters();
-        $this->assertCount(2, $parameters);
-        
-        $this->assertEquals('appChat', $parameters[0]->getName());
-        $this->assertEquals('WechatWorkAppChatBundle\Entity\AppChat', (string)$parameters[0]->getType());
-        
-        $this->assertEquals('content', $parameters[1]->getName());
-        $this->assertEquals('string', (string)$parameters[1]->getType());
-        
-        // 验证返回类型
-        $returnType = $method->getReturnType();
-        $this->assertNotNull($returnType);
-        $this->assertEquals('WechatWorkAppChatBundle\Entity\TextMessage', (string)$returnType);
+        $mediaId = 'image_media_123';
+
+        $result = $this->messageService->sendImage($this->appChat, $mediaId);
+
+        $this->assertInstanceOf(ImageMessage::class, $result);
+        $this->assertSame($this->appChat, $result->getAppChat());
+        $this->assertSame($mediaId, $result->getMediaId());
     }
 
-    public function test_sendMarkdown_method_exists(): void
+    public function testSendFile(): void
     {
-        $reflection = new \ReflectionClass(MessageService::class);
-        $this->assertTrue($reflection->hasMethod('sendMarkdown'));
-        
-        $method = $reflection->getMethod('sendMarkdown');
-        $this->assertTrue($method->isPublic());
-        
-        $parameters = $method->getParameters();
-        $this->assertCount(2, $parameters);
-        
-        $this->assertEquals('appChat', $parameters[0]->getName());
-        $this->assertEquals('WechatWorkAppChatBundle\Entity\AppChat', (string)$parameters[0]->getType());
-        
-        $this->assertEquals('content', $parameters[1]->getName());
-        $this->assertEquals('string', (string)$parameters[1]->getType());
-        
-        // 验证返回类型
-        $returnType = $method->getReturnType();
-        $this->assertNotNull($returnType);
-        $this->assertEquals('WechatWorkAppChatBundle\Entity\MarkdownMessage', (string)$returnType);
+        $mediaId = 'file_media_456';
+
+        $result = $this->messageService->sendFile($this->appChat, $mediaId);
+
+        $this->assertInstanceOf(FileMessage::class, $result);
+        $this->assertSame($this->appChat, $result->getAppChat());
+        $this->assertSame($mediaId, $result->getMediaId());
     }
 
-    public function test_sendImage_method_exists(): void
+    public function testSendUnsentWithEmptyResults(): void
     {
-        $reflection = new \ReflectionClass(MessageService::class);
-        $this->assertTrue($reflection->hasMethod('sendImage'));
-        
-        $method = $reflection->getMethod('sendImage');
-        $this->assertTrue($method->isPublic());
-        
-        $parameters = $method->getParameters();
-        $this->assertCount(2, $parameters);
-        
-        $this->assertEquals('appChat', $parameters[0]->getName());
-        $this->assertEquals('WechatWorkAppChatBundle\Entity\AppChat', (string)$parameters[0]->getType());
-        
-        $this->assertEquals('mediaId', $parameters[1]->getName());
-        $this->assertEquals('string', (string)$parameters[1]->getType());
-        
-        // 验证返回类型
-        $returnType = $method->getReturnType();
-        $this->assertNotNull($returnType);
-        $this->assertEquals('WechatWorkAppChatBundle\Entity\ImageMessage', (string)$returnType);
+        $this->expectNotToPerformAssertions();
+
+        $this->messageService->sendUnsent();
     }
 
-    public function test_sendFile_method_exists(): void
+    public function testSendUnsentWithSuccessfulMessages(): void
     {
-        $reflection = new \ReflectionClass(MessageService::class);
-        $this->assertTrue($reflection->hasMethod('sendFile'));
-        
-        $method = $reflection->getMethod('sendFile');
-        $this->assertTrue($method->isPublic());
-        
-        $parameters = $method->getParameters();
-        $this->assertCount(2, $parameters);
-        
-        $this->assertEquals('appChat', $parameters[0]->getName());
-        $this->assertEquals('WechatWorkAppChatBundle\Entity\AppChat', (string)$parameters[0]->getType());
-        
-        $this->assertEquals('mediaId', $parameters[1]->getName());
-        $this->assertEquals('string', (string)$parameters[1]->getType());
-        
-        // 验证返回类型
-        $returnType = $method->getReturnType();
-        $this->assertNotNull($returnType);
-        $this->assertEquals('WechatWorkAppChatBundle\Entity\FileMessage', (string)$returnType);
+        $textMessage = new TextMessage();
+        $textMessage->setAppChat($this->appChat);
+        $textMessage->setContent('测试文本');
+
+        $markdownMessage = new MarkdownMessage();
+        $markdownMessage->setAppChat($this->appChat);
+        $markdownMessage->setContent('# 测试Markdown');
+
+        // Persist test data
+        $em = self::getEntityManager();
+        $em->persist($textMessage);
+        $em->persist($markdownMessage);
+        $em->flush();
+
+        $this->messageService->sendUnsent();
+
+        $textMsgId = $textMessage->getMsgId();
+        $this->assertNotNull($textMsgId);
+        $this->assertStringStartsWith('mock_msg_id_', $textMsgId);
+        $this->assertTrue($textMessage->isSent());
+        $this->assertInstanceOf(\DateTimeImmutable::class, $textMessage->getSentAt());
+
+        $markdownMsgId = $markdownMessage->getMsgId();
+        $this->assertNotNull($markdownMsgId);
+        $this->assertStringStartsWith('mock_msg_id_', $markdownMsgId);
+        $this->assertTrue($markdownMessage->isSent());
+        $this->assertInstanceOf(\DateTimeImmutable::class, $markdownMessage->getSentAt());
     }
 
-    public function test_sendUnsent_method_exists(): void
+    public function testSendUnsentWithAllMessageTypes(): void
     {
-        $reflection = new \ReflectionClass(MessageService::class);
-        $this->assertTrue($reflection->hasMethod('sendUnsent'));
-        
-        $method = $reflection->getMethod('sendUnsent');
-        $this->assertTrue($method->isPublic());
-        
-        $parameters = $method->getParameters();
-        $this->assertCount(0, $parameters);
-        
-        // 验证返回类型
-        $returnType = $method->getReturnType();
-        $this->assertNotNull($returnType);
-        $this->assertEquals('void', (string)$returnType);
+        $textMessage = new TextMessage();
+        $textMessage->setAppChat($this->appChat);
+        $textMessage->setContent('文本消息');
+
+        $markdownMessage = new MarkdownMessage();
+        $markdownMessage->setAppChat($this->appChat);
+        $markdownMessage->setContent('# Markdown消息');
+
+        $imageMessage = new ImageMessage();
+        $imageMessage->setAppChat($this->appChat);
+        $imageMessage->setMediaId('image_123');
+
+        $fileMessage = new FileMessage();
+        $fileMessage->setAppChat($this->appChat);
+        $fileMessage->setMediaId('file_456');
+
+        // Persist test data
+        $em = self::getEntityManager();
+        $em->persist($textMessage);
+        $em->persist($markdownMessage);
+        $em->persist($imageMessage);
+        $em->persist($fileMessage);
+        $em->flush();
+
+        $this->messageService->sendUnsent();
+
+        $textMsgId = $textMessage->getMsgId();
+        $this->assertNotNull($textMsgId);
+        $this->assertStringStartsWith('mock_msg_id_', $textMsgId);
+
+        $markdownMsgId = $markdownMessage->getMsgId();
+        $this->assertNotNull($markdownMsgId);
+        $this->assertStringStartsWith('mock_msg_id_', $markdownMsgId);
+
+        $imageMsgId = $imageMessage->getMsgId();
+        $this->assertNotNull($imageMsgId);
+        $this->assertStringStartsWith('mock_msg_id_', $imageMsgId);
+
+        $fileMsgId = $fileMessage->getMsgId();
+        $this->assertNotNull($fileMsgId);
+        $this->assertStringStartsWith('mock_msg_id_', $fileMsgId);
     }
 
-    public function test_sendText_method_implementation(): void
+    protected function onSetUp(): void
     {
-        $reflection = new \ReflectionClass(MessageService::class);
-        $method = $reflection->getMethod('sendText');
-        $methodSource = $this->getMethodSource($method);
-        
-        // 验证方法实现包含关键逻辑
-        $this->assertStringContains('new TextMessage', $methodSource);
-        $this->assertStringContains('setAppChat', $methodSource);
-        $this->assertStringContains('setContent', $methodSource);
-        $this->assertStringContains('persist', $methodSource);
-        $this->assertStringContains('flush', $methodSource);
+        $this->messageService = self::getService(MessageService::class);
+
+        $this->agent = $this->createTestAgent();
+
+        $this->appChat = new AppChat();
+        $this->appChat->setAgent($this->agent);
+        $this->appChat->setChatId('test_chat');
+        $this->appChat->setName('测试群聊');
+        $this->appChat->setOwner('owner');
+
+        // Persist the entities for database relationship constraints
+        $em = self::getEntityManager();
+        $em->persist($this->agent);
+        $em->persist($this->appChat);
+        $em->flush();
     }
 
-    public function test_sendMarkdown_method_implementation(): void
+    private function createTestAgent(): AgentInterface
     {
-        $reflection = new \ReflectionClass(MessageService::class);
-        $method = $reflection->getMethod('sendMarkdown');
-        $methodSource = $this->getMethodSource($method);
-        
-        // 验证方法实现包含关键逻辑
-        $this->assertStringContains('new MarkdownMessage', $methodSource);
-        $this->assertStringContains('setAppChat', $methodSource);
-        $this->assertStringContains('setContent', $methodSource);
-        $this->assertStringContains('persist', $methodSource);
-        $this->assertStringContains('flush', $methodSource);
-    }
+        $corp = new Corp();
+        $corp->setName('Test Corp ' . uniqid());
+        $corp->setCorpId('test_corp_id_' . uniqid());
+        $corp->setCorpSecret('test_corp_secret');
+        self::getEntityManager()->persist($corp);
 
-    public function test_sendImage_method_implementation(): void
-    {
-        $reflection = new \ReflectionClass(MessageService::class);
-        $method = $reflection->getMethod('sendImage');
-        $methodSource = $this->getMethodSource($method);
-        
-        // 验证方法实现包含关键逻辑
-        $this->assertStringContains('new ImageMessage', $methodSource);
-        $this->assertStringContains('setAppChat', $methodSource);
-        $this->assertStringContains('setMediaId', $methodSource);
-        $this->assertStringContains('persist', $methodSource);
-        $this->assertStringContains('flush', $methodSource);
-    }
+        $agent = new Agent();
+        $agent->setName('Test Agent ' . uniqid());
+        $agent->setAgentId('test_agent_' . uniqid());
+        $agent->setSecret('test_secret');
+        $agent->setCorp($corp);
+        self::getEntityManager()->persist($agent);
 
-    public function test_sendFile_method_implementation(): void
-    {
-        $reflection = new \ReflectionClass(MessageService::class);
-        $method = $reflection->getMethod('sendFile');
-        $methodSource = $this->getMethodSource($method);
-        
-        // 验证方法实现包含关键逻辑
-        $this->assertStringContains('new FileMessage', $methodSource);
-        $this->assertStringContains('setAppChat', $methodSource);
-        $this->assertStringContains('setMediaId', $methodSource);
-        $this->assertStringContains('persist', $methodSource);
-        $this->assertStringContains('flush', $methodSource);
+        return $agent;
     }
-
-    public function test_sendUnsent_method_implementation(): void
-    {
-        $reflection = new \ReflectionClass(MessageService::class);
-        $method = $reflection->getMethod('sendUnsent');
-        $methodSource = $this->getMethodSource($method);
-        
-        // 验证方法实现包含关键逻辑
-        $this->assertStringContains('array_merge', $methodSource);
-        $this->assertStringContains('findUnsent', $methodSource);
-        $this->assertStringContains('foreach', $methodSource);
-        $this->assertStringContains('SendAppChatMessageRequest', $methodSource);
-        $this->assertStringContains('workService', $methodSource);
-        $this->assertStringContains('setMsgId', $methodSource);
-        $this->assertStringContains('setIsSent', $methodSource);
-        $this->assertStringContains('setSentAt', $methodSource);
-        $this->assertStringContains('try', $methodSource);
-        $this->assertStringContains('catch', $methodSource);
-        $this->assertStringContains('logger', $methodSource);
-        $this->assertStringContains('continue', $methodSource);
-    }
-
-    public function test_service_has_required_properties(): void
-    {
-        $reflection = new \ReflectionClass(MessageService::class);
-        $constructor = $reflection->getConstructor();
-        $constructorSource = $this->getMethodSource($constructor);
-        
-        // 验证构造函数中使用了promoted properties
-        $this->assertStringContains('private readonly EntityManagerInterface', $constructorSource);
-        $this->assertStringContains('private readonly TextMessageRepository', $constructorSource);
-        $this->assertStringContains('private readonly MarkdownMessageRepository', $constructorSource);
-        $this->assertStringContains('private readonly ImageMessageRepository', $constructorSource);
-        $this->assertStringContains('private readonly FileMessageRepository', $constructorSource);
-        $this->assertStringContains('private readonly WorkService', $constructorSource);
-        $this->assertStringContains('private readonly LoggerInterface', $constructorSource);
-    }
-
-    private function getMethodSource(\ReflectionMethod $method): string
-    {
-        $filename = $method->getFileName();
-        $startLine = $method->getStartLine();
-        $endLine = $method->getEndLine();
-        
-        $lines = file($filename);
-        $methodLines = array_slice($lines, $startLine - 1, $endLine - $startLine + 1);
-        
-        return implode('', $methodLines);
-    }
-
-    private function assertStringContains(string $needle, string $haystack): void
-    {
-        $this->assertTrue(
-            str_contains($haystack, $needle),
-            "Failed asserting that '$haystack' contains '$needle'"
-        );
-    }
-} 
+}

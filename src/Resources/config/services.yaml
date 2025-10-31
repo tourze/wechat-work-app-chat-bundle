@@ -6,11 +6,15 @@ services:
 
   WechatWorkAppChatBundle\Command\:
     resource: '../../Command/'
+
   WechatWorkAppChatBundle\Controller\:
     resource: '../../Controller/'
+
   WechatWorkAppChatBundle\EventSubscriber\:
     resource: '../../EventSubscriber/'
+
   WechatWorkAppChatBundle\Repository\:
     resource: '../../Repository/'
+
   WechatWorkAppChatBundle\Service\:
     resource: '../../Service/'

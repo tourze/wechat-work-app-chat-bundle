@@ -2,110 +2,166 @@
 
 namespace WechatWorkAppChatBundle\Tests\Repository;
 
-use PHPUnit\Framework\TestCase;
+use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
+use Tourze\PHPUnitSymfonyKernelTest\AbstractRepositoryTestCase;
+use Tourze\WechatWorkContracts\AgentInterface;
+use WechatWorkAppChatBundle\Entity\AppChat;
+use WechatWorkAppChatBundle\Entity\FileMessage;
 use WechatWorkAppChatBundle\Repository\FileMessageRepository;
+use WechatWorkBundle\Entity\Agent;
+use WechatWorkBundle\Entity\Corp;
 
-class FileMessageRepositoryTest extends TestCase
+/**
+ * @internal
+ */
+#[CoversClass(FileMessageRepository::class)]
+#[RunTestsInSeparateProcesses]
+final class FileMessageRepositoryTest extends AbstractRepositoryTestCase
 {
-    public function test_repository_class_exists(): void
+    private FileMessageRepository $repository;
+
+    protected function onSetUp(): void
     {
-        $this->assertTrue(class_exists(FileMessageRepository::class));
+        $this->repository = self::getService(FileMessageRepository::class);
     }
 
-    public function test_repository_extends_service_entity_repository(): void
+    public function testRepositoryService(): void
     {
-        $reflection = new \ReflectionClass(FileMessageRepository::class);
-        $this->assertTrue($reflection->isSubclassOf('Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository'));
+        $this->assertInstanceOf(FileMessageRepository::class, $this->repository);
     }
 
-    public function test_findUnsent_method_exists(): void
+    public function testFindUnsent(): void
     {
-        $reflection = new \ReflectionClass(FileMessageRepository::class);
-        $this->assertTrue($reflection->hasMethod('findUnsent'));
-        
-        $method = $reflection->getMethod('findUnsent');
-        $this->assertTrue($method->isPublic());
-        
-        $parameters = $method->getParameters();
-        $this->assertCount(0, $parameters);
+        // Test the method exists and returns an array
+        $results = $this->repository->findUnsent();
+        $this->assertIsArray($results);
+
+        // Since SendMessageListener might auto-send messages in test environment,
+        // we just verify the method works correctly without asserting specific count
+        foreach ($results as $result) {
+            $this->assertInstanceOf(FileMessage::class, $result);
+            $this->assertFalse($result->isSent());
+        }
     }
 
-    public function test_findUnsent_return_type(): void
+    public function testSave(): void
     {
-        $reflection = new \ReflectionClass(FileMessageRepository::class);
-        $method = $reflection->getMethod('findUnsent');
-        $returnType = $method->getReturnType();
-        
-        $this->assertNotNull($returnType);
-        $this->assertEquals('array', (string)$returnType);
+        $appChat = $this->createAppChat();
+
+        $fileMessage = new FileMessage();
+        $fileMessage->setAppChat($appChat);
+        $fileMessage->setMediaId('save_test_media_id');
+
+        $this->repository->save($fileMessage);
+
+        $found = $this->repository->find($fileMessage->getId());
+        $this->assertInstanceOf(FileMessage::class, $found);
+        $this->assertEquals('save_test_media_id', $found->getMediaId());
     }
 
-    public function test_repository_has_correct_entity_class(): void
+    public function testRemove(): void
     {
-        $reflection = new \ReflectionClass(FileMessageRepository::class);
-        $constructor = $reflection->getConstructor();
-        $constructorSource = $this->getMethodSource($constructor);
-        
-        // 验证构造函数调用parent::__construct时传递了正确的实体类
-        $this->assertStringContains('FileMessage::class', $constructorSource);
+        $appChat = $this->createAppChat();
+
+        $fileMessage = new FileMessage();
+        $fileMessage->setAppChat($appChat);
+        $fileMessage->setMediaId('remove_test_media_id');
+
+        $this->repository->save($fileMessage);
+        $id = $fileMessage->getId();
+
+        $this->repository->remove($fileMessage);
+
+        $found = $this->repository->find($id);
+        $this->assertNull($found);
     }
 
-    public function test_inherited_methods_availability(): void
+    public function testCountByAssociationAppChatShouldReturnCorrectNumber(): void
     {
-        $reflection = new \ReflectionClass(FileMessageRepository::class);
-        
-        // 测试继承的基本方法是否可用
-        $this->assertTrue($reflection->hasMethod('find'));
-        $this->assertTrue($reflection->hasMethod('findOneBy'));
-        $this->assertTrue($reflection->hasMethod('findAll'));
-        $this->assertTrue($reflection->hasMethod('findBy'));
+        $appChat1 = $this->createAppChat();
+        $appChat2 = $this->createAppChat();
+
+        $fileMessage1 = new FileMessage();
+        $fileMessage1->setAppChat($appChat1);
+        $fileMessage1->setMediaId('count_chat1_media');
+        $this->repository->save($fileMessage1);
+
+        $fileMessage2 = new FileMessage();
+        $fileMessage2->setAppChat($appChat2);
+        $fileMessage2->setMediaId('count_chat2_media');
+        $this->repository->save($fileMessage2);
+
+        $count = $this->repository->count(['appChat' => $appChat1]);
+        $this->assertEquals(1, $count);
     }
 
-    public function test_findUnsent_method_implementation(): void
+    private function createTestAgent(): AgentInterface
     {
-        $reflection = new \ReflectionClass(FileMessageRepository::class);
-        $method = $reflection->getMethod('findUnsent');
-        $methodSource = $this->getMethodSource($method);
-        
-        // 验证方法实现使用了正确的查询构建
-        $this->assertStringContains('createQueryBuilder', $methodSource);
-        $this->assertStringContains('fm', $methodSource); // 查询别名
-        $this->assertStringContains('isSent', $methodSource);
-        $this->assertStringContains('false', $methodSource);
-        $this->assertStringContains('orderBy', $methodSource);
-        $this->assertStringContains('ASC', $methodSource);
-        $this->assertStringContains('getQuery', $methodSource);
-        $this->assertStringContains('getResult', $methodSource);
+        $corp = new Corp();
+        $corp->setName('Test Corp ' . uniqid());
+        $corp->setCorpId('test_corp_id_' . uniqid());
+        $corp->setCorpSecret('test_corp_secret');
+        self::getEntityManager()->persist($corp);
+
+        $agent = new Agent();
+        $agent->setName('Test Agent ' . uniqid());
+        $agent->setAgentId('test_agent_' . uniqid());
+        $agent->setSecret('test_secret');
+        $agent->setCorp($corp);
+        self::getEntityManager()->persist($agent);
+
+        return $agent;
     }
 
-    public function test_findUnsent_has_correct_order_by(): void
+    private function createAppChat(): AppChat
     {
-        $reflection = new \ReflectionClass(FileMessageRepository::class);
-        $method = $reflection->getMethod('findUnsent');
-        $methodSource = $this->getMethodSource($method);
-        
-        // 验证排序是按照id升序
-        $this->assertStringContains('fm.id', $methodSource);
-        $this->assertStringContains('ASC', $methodSource);
+        $agent = $this->createTestAgent();
+
+        $appChat = new AppChat();
+        $appChat->setAgent($agent);
+        $appChat->setChatId('test_chat_id_' . uniqid());
+        $appChat->setName('Test Chat');
+        $appChat->setOwner('test_owner');
+        $appChat->setUserList(['user1', 'user2']);
+
+        self::getEntityManager()->persist($appChat);
+        self::getEntityManager()->flush();
+
+        return $appChat;
     }
 
-    private function getMethodSource(\ReflectionMethod $method): string
+    public function testFindOneByAssociationAppChatShouldReturnMatchingEntity(): void
     {
-        $filename = $method->getFileName();
-        $startLine = $method->getStartLine();
-        $endLine = $method->getEndLine();
-        
-        $lines = file($filename);
-        $methodLines = array_slice($lines, $startLine - 1, $endLine - $startLine + 1);
-        
-        return implode('', $methodLines);
+        $appChat = $this->createAppChat();
+
+        $fileMessage = new FileMessage();
+        $fileMessage->setAppChat($appChat);
+        $fileMessage->setMediaId('findone_association_media_id');
+        $this->repository->save($fileMessage);
+
+        $result = $this->repository->findOneBy(['appChat' => $appChat]);
+        $this->assertInstanceOf(FileMessage::class, $result);
+        $this->assertEquals($appChat->getId(), $result->getAppChat()->getId());
     }
 
-    private function assertStringContains(string $needle, string $haystack): void
+    protected function createNewEntity(): object
     {
-        $this->assertTrue(
-            str_contains($haystack, $needle),
-            "Failed asserting that '$haystack' contains '$needle'"
-        );
+        $appChat = $this->createAppChat();
+
+        $entity = new FileMessage();
+        $entity->setAppChat($appChat);
+        $entity->setMediaId('test_media_id_' . uniqid());
+
+        return $entity;
     }
-} 
+
+    /**
+     * @return ServiceEntityRepository<FileMessage>
+     */
+    protected function getRepository(): ServiceEntityRepository
+    {
+        return $this->repository;
+    }
+}

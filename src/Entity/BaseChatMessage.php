@@ -4,6 +4,9 @@ namespace WechatWorkAppChatBundle\Entity;
 
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
+use Tourze\DoctrineIndexedBundle\Attribute\IndexColumn;
+use Tourze\DoctrineSnowflakeBundle\Service\SnowflakeIdGenerator;
 use Tourze\DoctrineSnowflakeBundle\Traits\SnowflakeKeyAware;
 use Tourze\DoctrineTimestampBundle\Traits\TimestampableAware;
 use Tourze\DoctrineUserBundle\Traits\BlameableAware;
@@ -11,9 +14,16 @@ use Tourze\DoctrineUserBundle\Traits\BlameableAware;
 #[ORM\MappedSuperclass]
 abstract class BaseChatMessage
 {
+    use BlameableAware;
     use SnowflakeKeyAware;
     use TimestampableAware;
-    use BlameableAware;
+
+    #[ORM\Id]
+    #[ORM\GeneratedValue(strategy: 'CUSTOM')]
+    #[ORM\CustomIdGenerator(class: SnowflakeIdGenerator::class)]
+    #[ORM\Column(type: Types::BIGINT, nullable: false, options: ['comment' => 'ID'])]
+    #[Assert\Length(max: 20)]
+    protected ?string $id = null;
 
     #[ORM\ManyToOne(targetEntity: AppChat::class)]
     #[ORM\JoinColumn(nullable: false)]
@@ -36,6 +46,9 @@ abstract class BaseChatMessage
 
     abstract public function getMsgType(): string;
 
+    /**
+     * @return array<string, mixed>
+     */
     abstract public function getRequestContent(): array;
 
     public function getAppChat(): AppChat
@@ -43,11 +56,9 @@ abstract class BaseChatMessage
         return $this->appChat;
     }
 
-    public function setAppChat(AppChat $appChat): self
+    public function setAppChat(AppChat $appChat): void
     {
         $this->appChat = $appChat;
-
-        return $this;
     }
 
     public function isSent(): bool
@@ -55,11 +66,9 @@ abstract class BaseChatMessage
         return $this->isSent;
     }
 
-    public function setIsSent(bool $isSent): self
+    public function setIsSent(bool $isSent): void
     {
         $this->isSent = $isSent;
-
-        return $this;
     }
 
     public function getSentAt(): ?\DateTimeImmutable
@@ -67,11 +76,9 @@ abstract class BaseChatMessage
         return $this->sentAt;
     }
 
-    public function setSentAt(?\DateTimeImmutable $sentAt): self
+    public function setSentAt(?\DateTimeImmutable $sentAt): void
     {
         $this->sentAt = $sentAt;
-
-        return $this;
     }
 
     public function getMsgId(): ?string
@@ -79,11 +86,9 @@ abstract class BaseChatMessage
         return $this->msgId;
     }
 
-    public function setMsgId(?string $msgId): self
+    public function setMsgId(?string $msgId): void
     {
         $this->msgId = $msgId;
-
-        return $this;
     }
 
     public function isRecalled(): bool
@@ -91,11 +96,9 @@ abstract class BaseChatMessage
         return $this->isRecalled;
     }
 
-    public function setIsRecalled(bool $isRecalled): self
+    public function setIsRecalled(bool $isRecalled): void
     {
         $this->isRecalled = $isRecalled;
-
-        return $this;
     }
 
     public function getRecalledAt(): ?\DateTimeImmutable
@@ -103,10 +106,8 @@ abstract class BaseChatMessage
         return $this->recalledAt;
     }
 
-    public function setRecalledAt(?\DateTimeImmutable $recalledAt): self
+    public function setRecalledAt(?\DateTimeImmutable $recalledAt): void
     {
         $this->recalledAt = $recalledAt;
-
-        return $this;
     }
 }

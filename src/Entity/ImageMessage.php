@@ -4,6 +4,7 @@ namespace WechatWorkAppChatBundle\Entity;
 
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 use WechatWorkAppChatBundle\Repository\ImageMessageRepository;
 
 #[ORM\Entity(repositoryClass: ImageMessageRepository::class)]
@@ -11,6 +12,8 @@ use WechatWorkAppChatBundle\Repository\ImageMessageRepository;
 class ImageMessage extends BaseChatMessage
 {
     #[ORM\Column(type: Types::STRING, length: 128, options: ['comment' => '图片素材ID'])]
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 128)]
     private string $mediaId;
 
     public function getMsgType(): string
@@ -18,6 +21,9 @@ class ImageMessage extends BaseChatMessage
         return 'image';
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function getRequestContent(): array
     {
         return [
@@ -32,11 +38,9 @@ class ImageMessage extends BaseChatMessage
         return $this->mediaId;
     }
 
-    public function setMediaId(string $mediaId): self
+    public function setMediaId(string $mediaId): void
     {
         $this->mediaId = $mediaId;
-
-        return $this;
     }
 
     public function __toString(): string

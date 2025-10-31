@@ -3,7 +3,9 @@
 namespace WechatWorkAppChatBundle\Service;
 
 use Doctrine\ORM\EntityManagerInterface;
+use Monolog\Attribute\WithMonologChannel;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 use WechatWorkAppChatBundle\Entity\AppChat;
 use WechatWorkAppChatBundle\Entity\FileMessage;
 use WechatWorkAppChatBundle\Entity\ImageMessage;
@@ -14,8 +16,10 @@ use WechatWorkAppChatBundle\Repository\ImageMessageRepository;
 use WechatWorkAppChatBundle\Repository\MarkdownMessageRepository;
 use WechatWorkAppChatBundle\Repository\TextMessageRepository;
 use WechatWorkAppChatBundle\Request\SendAppChatMessageRequest;
-use WechatWorkBundle\Service\WorkService;
+use WechatWorkBundle\Service\WorkServiceInterface;
 
+#[Autoconfigure(public: true)]
+#[WithMonologChannel(channel: 'wechat_work_app_chat')]
 class MessageService
 {
     public function __construct(
@@ -24,7 +28,7 @@ class MessageService
         private readonly MarkdownMessageRepository $markdownMessageRepository,
         private readonly ImageMessageRepository $imageMessageRepository,
         private readonly FileMessageRepository $fileMessageRepository,
-        private readonly WorkService $workService,
+        private readonly WorkServiceInterface $workService,
         private readonly LoggerInterface $logger,
     ) {
     }
@@ -90,14 +94,15 @@ class MessageService
         );
 
         foreach ($messages as $message) {
-            /* @var MarkdownMessage $message */
+            /* @var BaseChatMessage $message */
 
             try {
                 $request = new SendAppChatMessageRequest();
                 $request->setMessage($message);
+                /** @var array<string, mixed>|null $response */
                 $response = $this->workService->request($request);
 
-                if (isset($response['msgid'])) {
+                if (is_array($response) && isset($response['msgid']) && is_string($response['msgid'])) {
                     $message->setMsgId($response['msgid']);
                     $message->setIsSent(true);
                     $message->setSentAt(new \DateTimeImmutable());

@@ -13,6 +13,9 @@ class CreateAppChatRequest extends ApiRequest
 
     private string $owner;
 
+    /**
+     * @var list<string>
+     */
     private array $userList;
 
     public function getRequestPath(): string
@@ -20,6 +23,9 @@ class CreateAppChatRequest extends ApiRequest
         return '/cgi-bin/appchat/create';
     }
 
+    /**
+     * @return array<string, mixed>|null
+     */
     public function getRequestOptions(): ?array
     {
         return [
@@ -51,11 +57,17 @@ class CreateAppChatRequest extends ApiRequest
         $this->owner = $owner;
     }
 
+    /**
+     * @return list<string>
+     */
     public function getUserList(): array
     {
         return $this->userList;
     }
 
+    /**
+     * @param list<string> $userList
+     */
     public function setUserList(array $userList): void
     {
         $this->userList = $userList;

@@ -2,202 +2,186 @@
 
 namespace WechatWorkAppChatBundle\Tests\EventSubscriber;
 
-use PHPUnit\Framework\TestCase;
+use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\Event\PostPersistEventArgs;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
+use Tourze\PHPUnitSymfonyKernelTest\AbstractIntegrationTestCase;
+use Tourze\WechatWorkContracts\AgentInterface;
+use WechatWorkAppChatBundle\Entity\AppChat;
+use WechatWorkAppChatBundle\Entity\FileMessage;
+use WechatWorkAppChatBundle\Entity\ImageMessage;
+use WechatWorkAppChatBundle\Entity\MarkdownMessage;
+use WechatWorkAppChatBundle\Entity\TextMessage;
 use WechatWorkAppChatBundle\EventSubscriber\SendMessageListener;
+use WechatWorkBundle\Entity\Agent;
+use WechatWorkBundle\Entity\Corp;
 
-class SendMessageListenerTest extends TestCase
+/**
+ * @internal
+ */
+#[CoversClass(SendMessageListener::class)]
+#[RunTestsInSeparateProcesses]
+final class SendMessageListenerTest extends AbstractIntegrationTestCase
 {
-    public function test_listener_class_exists(): void
+    private SendMessageListener $listener;
+
+    public function testSuccessfulMessageSending(): void
     {
-        $this->assertTrue(class_exists(SendMessageListener::class));
+        $agent = $this->createTestAgent();
+
+        $appChat = new AppChat();
+        $appChat->setAgent($agent);
+        $appChat->setChatId('test_chat_123');
+        $appChat->setName('测试群聊');
+        $appChat->setOwner('owner');
+
+        $message = new TextMessage();
+        $message->setAppChat($appChat);
+        $message->setContent('测试消息');
+
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $args = new PostPersistEventArgs($message, $entityManager);
+
+        $entityManager
+            ->expects($this->once())
+            ->method('flush')
+        ;
+
+        $this->listener->postPersist($message, $args);
+
+        $msgId = $message->getMsgId();
+        $this->assertNotNull($msgId);
+        $this->assertStringStartsWith('mock_msg_id_', $msgId);
+        $this->assertTrue($message->isSent());
+        $this->assertInstanceOf(\DateTimeImmutable::class, $message->getSentAt());
     }
 
-    public function test_listener_has_required_constructor_parameters(): void
+    public function testMarkdownMessageSending(): void
     {
-        $reflection = new \ReflectionClass(SendMessageListener::class);
-        $constructor = $reflection->getConstructor();
-        
-        $this->assertNotNull($constructor);
-        
-        $parameters = $constructor->getParameters();
-        $this->assertCount(2, $parameters);
-        
-        $this->assertEquals('workService', $parameters[0]->getName());
-        $this->assertEquals('WechatWorkBundle\Service\WorkService', (string)$parameters[0]->getType());
-        
-        $this->assertEquals('logger', $parameters[1]->getName());
-        $this->assertEquals('Psr\Log\LoggerInterface', (string)$parameters[1]->getType());
+        $agent = $this->createTestAgent();
+
+        $appChat = new AppChat();
+        $appChat->setAgent($agent);
+        $appChat->setChatId('test_chat_markdown');
+        $appChat->setName('测试群聊');
+        $appChat->setOwner('owner');
+
+        $message = new MarkdownMessage();
+        $message->setAppChat($appChat);
+        $message->setContent('# 测试Markdown消息');
+
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $args = new PostPersistEventArgs($message, $entityManager);
+
+        $entityManager
+            ->expects($this->once())
+            ->method('flush')
+        ;
+
+        $this->listener->postPersist($message, $args);
+
+        $msgId = $message->getMsgId();
+        $this->assertNotNull($msgId);
+        $this->assertStringStartsWith('mock_msg_id_', $msgId);
+        $this->assertTrue($message->isSent());
+        $this->assertInstanceOf(\DateTimeImmutable::class, $message->getSentAt());
     }
 
-    public function test_listener_has_entity_listener_attributes(): void
+    public function testImageMessageSending(): void
     {
-        $reflection = new \ReflectionClass(SendMessageListener::class);
-        $attributes = $reflection->getAttributes();
-        
-        $this->assertNotEmpty($attributes);
-        $this->assertCount(4, $attributes); // 4个实体监听器属性
-        
-        $entityListenerAttributes = [];
-        foreach ($attributes as $attribute) {
-            if ($attribute->getName() === 'Doctrine\Bundle\DoctrineBundle\Attribute\AsEntityListener') {
-                $entityListenerAttributes[] = $attribute;
-            }
-        }
-        
-        $this->assertCount(4, $entityListenerAttributes);
-        
-        // 验证每个属性的参数
-        $expectedEntities = [
-            'WechatWorkAppChatBundle\Entity\TextMessage',
-            'WechatWorkAppChatBundle\Entity\MarkdownMessage',
-            'WechatWorkAppChatBundle\Entity\ImageMessage',
-            'WechatWorkAppChatBundle\Entity\FileMessage'
-        ];
-        
-        $actualEntities = [];
-        foreach ($entityListenerAttributes as $attribute) {
-            $arguments = $attribute->getArguments();
-            $this->assertEquals('postPersist', $arguments['event']);
-            $this->assertEquals('postPersist', $arguments['method']);
-            $actualEntities[] = $arguments['entity'];
-        }
-        
-        foreach ($expectedEntities as $expectedEntity) {
-            $this->assertContains($expectedEntity, $actualEntities);
-        }
+        $agent = $this->createTestAgent();
+
+        $appChat = new AppChat();
+        $appChat->setAgent($agent);
+        $appChat->setChatId('test_chat_image');
+        $appChat->setName('测试群聊');
+        $appChat->setOwner('owner');
+
+        $message = new ImageMessage();
+        $message->setAppChat($appChat);
+        $message->setMediaId('image_123');
+
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $args = new PostPersistEventArgs($message, $entityManager);
+
+        $entityManager
+            ->expects($this->once())
+            ->method('flush')
+        ;
+
+        $this->listener->postPersist($message, $args);
+
+        $msgId = $message->getMsgId();
+        $this->assertNotNull($msgId);
+        $this->assertStringStartsWith('mock_msg_id_', $msgId);
+        $this->assertTrue($message->isSent());
+        $this->assertInstanceOf(\DateTimeImmutable::class, $message->getSentAt());
     }
 
-    public function test_postPersist_method_exists(): void
+    public function testFileMessageSending(): void
     {
-        $reflection = new \ReflectionClass(SendMessageListener::class);
-        $this->assertTrue($reflection->hasMethod('postPersist'));
-        
-        $method = $reflection->getMethod('postPersist');
-        $this->assertTrue($method->isPublic());
-        
-        $parameters = $method->getParameters();
-        $this->assertCount(2, $parameters);
-        
-        $this->assertEquals('message', $parameters[0]->getName());
-        $this->assertEquals('WechatWorkAppChatBundle\Entity\BaseChatMessage', (string)$parameters[0]->getType());
-        
-        $this->assertEquals('args', $parameters[1]->getName());
-        $this->assertEquals('Doctrine\ORM\Event\PostPersistEventArgs', (string)$parameters[1]->getType());
-        
-        // 验证返回类型
-        $returnType = $method->getReturnType();
-        $this->assertNotNull($returnType);
-        $this->assertEquals('void', (string)$returnType);
+        $agent = $this->createTestAgent();
+
+        $appChat = new AppChat();
+        $appChat->setAgent($agent);
+        $appChat->setChatId('test_chat_file');
+        $appChat->setName('测试群聊');
+        $appChat->setOwner('owner');
+
+        $message = new FileMessage();
+        $message->setAppChat($appChat);
+        $message->setMediaId('file_456');
+
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $args = new PostPersistEventArgs($message, $entityManager);
+
+        $entityManager
+            ->expects($this->once())
+            ->method('flush')
+        ;
+
+        $this->listener->postPersist($message, $args);
+
+        $msgId = $message->getMsgId();
+        $this->assertNotNull($msgId);
+        $this->assertStringStartsWith('mock_msg_id_', $msgId);
+        $this->assertTrue($message->isSent());
+        $this->assertInstanceOf(\DateTimeImmutable::class, $message->getSentAt());
     }
 
-    public function test_postPersist_method_has_throws_annotation(): void
+    public function testPostPersistMethodExists(): void
     {
-        $reflection = new \ReflectionClass(SendMessageListener::class);
-        $method = $reflection->getMethod('postPersist');
-        $docComment = $method->getDocComment();
-        
-        $this->assertNotFalse($docComment);
-        $this->assertStringContains('@throws', $docComment);
-        $this->assertStringContains('\\Throwable', $docComment);
+        $this->expectNotToPerformAssertions();
+
+        $entity = $this->createMock(TextMessage::class);
+        $entityManager = $this->createMock(EntityManagerInterface::class);
+        $event = new PostPersistEventArgs($entity, $entityManager);
+
+        $this->listener->postPersist($entity, $event);
     }
 
-    public function test_postPersist_method_implementation(): void
+    protected function onSetUp(): void
     {
-        $reflection = new \ReflectionClass(SendMessageListener::class);
-        $method = $reflection->getMethod('postPersist');
-        $methodSource = $this->getMethodSource($method);
-        
-        // 验证方法实现包含关键逻辑
-        $this->assertStringContains('try', $methodSource);
-        $this->assertStringContains('catch', $methodSource);
-        $this->assertStringContains('SendAppChatMessageRequest', $methodSource);
-        $this->assertStringContains('workService', $methodSource);
-        $this->assertStringContains('setAgent', $methodSource);
-        $this->assertStringContains('setMessage', $methodSource);
-        $this->assertStringContains('request', $methodSource);
+        // Get the service from container which will use MockWorkService
+        $this->listener = self::getService(SendMessageListener::class);
     }
 
-    public function test_postPersist_success_handling(): void
+    private function createTestAgent(): AgentInterface
     {
-        $reflection = new \ReflectionClass(SendMessageListener::class);
-        $method = $reflection->getMethod('postPersist');
-        $methodSource = $this->getMethodSource($method);
-        
-        // 验证成功处理逻辑
-        $this->assertStringContains('msgid', $methodSource);
-        $this->assertStringContains('setMsgId', $methodSource);
-        $this->assertStringContains('setIsSent', $methodSource);
-        $this->assertStringContains('setSentAt', $methodSource);
-        $this->assertStringContains('DateTimeImmutable', $methodSource);
-        $this->assertStringContains('flush', $methodSource);
-    }
+        $corp = new Corp();
+        $corp->setName('Test Corp ' . uniqid());
+        $corp->setCorpId('test_corp_id_' . uniqid());
+        $corp->setCorpSecret('test_corp_secret');
+        self::getEntityManager()->persist($corp);
 
-    public function test_postPersist_error_handling(): void
-    {
-        $reflection = new \ReflectionClass(SendMessageListener::class);
-        $method = $reflection->getMethod('postPersist');
-        $methodSource = $this->getMethodSource($method);
-        
-        // 验证错误处理逻辑
-        $this->assertStringContains('Throwable', $methodSource);
-        $this->assertStringContains('logger', $methodSource);
-        $this->assertStringContains('error', $methodSource);
-        $this->assertStringContains('自动发送群聊消息失败', $methodSource);
-        $this->assertStringContains('chat_id', $methodSource);
-        $this->assertStringContains('getChatId', $methodSource);
-        $this->assertStringContains('getMessage', $methodSource);
-    }
+        $agent = new Agent();
+        $agent->setName('Test Agent ' . uniqid());
+        $agent->setAgentId('test_agent_' . uniqid());
+        $agent->setSecret('test_secret');
+        $agent->setCorp($corp);
+        self::getEntityManager()->persist($agent);
 
-    public function test_listener_namespace_is_correct(): void
-    {
-        $reflection = new \ReflectionClass(SendMessageListener::class);
-        $this->assertEquals('WechatWorkAppChatBundle\EventSubscriber', $reflection->getNamespaceName());
+        return $agent;
     }
-
-    public function test_listener_has_required_properties(): void
-    {
-        $reflection = new \ReflectionClass(SendMessageListener::class);
-        $constructor = $reflection->getConstructor();
-        $constructorSource = $this->getMethodSource($constructor);
-        
-        // 验证构造函数中使用了promoted properties
-        $this->assertStringContains('private readonly WorkService', $constructorSource);
-        $this->assertStringContains('private readonly LoggerInterface', $constructorSource);
-    }
-
-    public function test_listener_uses_correct_imports(): void
-    {
-        $reflection = new \ReflectionClass(SendMessageListener::class);
-        $filename = $reflection->getFileName();
-        $fileContent = file_get_contents($filename);
-        
-        // 验证关键import语句
-        $this->assertStringContains('use Doctrine\Bundle\DoctrineBundle\Attribute\AsEntityListener', $fileContent);
-        $this->assertStringContains('use Doctrine\ORM\Event\PostPersistEventArgs', $fileContent);
-        $this->assertStringContains('use Doctrine\ORM\Events', $fileContent);
-        $this->assertStringContains('use Psr\Log\LoggerInterface', $fileContent);
-        $this->assertStringContains('use WechatWorkAppChatBundle\Entity\BaseChatMessage', $fileContent);
-        $this->assertStringContains('use WechatWorkAppChatBundle\Request\SendAppChatMessageRequest', $fileContent);
-        $this->assertStringContains('use WechatWorkBundle\Service\WorkService', $fileContent);
-    }
-
-    private function getMethodSource(\ReflectionMethod $method): string
-    {
-        $filename = $method->getFileName();
-        $startLine = $method->getStartLine();
-        $endLine = $method->getEndLine();
-        
-        $lines = file($filename);
-        $methodLines = array_slice($lines, $startLine - 1, $endLine - $startLine + 1);
-        
-        return implode('', $methodLines);
-    }
-
-    private function assertStringContains(string $needle, string $haystack): void
-    {
-        $this->assertTrue(
-            str_contains($haystack, $needle),
-            "Failed asserting that '$haystack' contains '$needle'"
-        );
-    }
-} 
+}

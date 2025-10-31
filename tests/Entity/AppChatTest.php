@@ -2,178 +2,123 @@
 
 namespace WechatWorkAppChatBundle\Tests\Entity;
 
-use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use Tourze\PHPUnitDoctrineEntity\AbstractEntityTestCase;
 use Tourze\WechatWorkContracts\AgentInterface;
+use Tourze\WechatWorkContracts\CorpInterface;
 use WechatWorkAppChatBundle\Entity\AppChat;
+use WechatWorkBundle\Entity\Agent;
+use WechatWorkBundle\Entity\Corp;
 
-class AppChatTest extends TestCase
+/**
+ * @internal
+ */
+#[CoversClass(AppChat::class)]
+final class AppChatTest extends AbstractEntityTestCase
 {
-    private AppChat $appChat;
-    private MockObject $agent;
+    protected function createEntity(): object
+    {
+        return new AppChat();
+    }
+
+    /**
+     * @return array<string, array{string, mixed}>
+     */
+    public static function propertiesProvider(): array
+    {
+        // 使用真实Agent实体而不是匿名类
+        $corp = new Corp();
+        $corp->setName('Test Corp');
+        $corp->setCorpId('test_corp_id');
+        $corp->setCorpSecret('test_corp_secret');
+
+        $agent = new Agent();
+        $agent->setName('Test Agent');
+        $agent->setAgentId('test_agent_id');
+        $agent->setSecret('test_secret');
+        $agent->setCorp($corp);
+
+        return [
+            'agent' => ['agent', $agent],
+            'chatId' => ['chatId', 'test_value'],
+            'name' => ['name', 'test_value'],
+            'owner' => ['owner', 'test_value'],
+            'userList' => ['userList', ['key' => 'value']],
+        ];
+    }
 
     protected function setUp(): void
     {
-        $this->appChat = new AppChat();
-        $this->agent = $this->createMock(AgentInterface::class);
-        $this->agent->expects($this->any())->method('getAgentId')->willReturn('test_agent_id');
+        parent::setUp();
+        // 集成测试不需要额外的设置
     }
 
-    public function test_setAgent_andGetAgent(): void
+    public function testCreateAppChat(): void
     {
-        /** @var MockObject&AgentInterface $agent */
-        $agent = $this->agent;
-        $this->appChat->setAgent($agent);
+        $agent = $this->createMock(AgentInterface::class);
 
-        $this->assertEquals($agent, $this->appChat->getAgent());
+        $appChat = new AppChat();
+        $appChat->setAgent($agent);
+        $appChat->setChatId('test_chat_id');
+        $appChat->setName('测试群聊');
+        $appChat->setOwner('owner_user_id');
+        $appChat->setUserList(['user1', 'user2', 'user3']);
+        $appChat->setIsSynced(true);
+        $appChat->setLastSyncedAt(new \DateTimeImmutable());
+
+        $this->assertSame($agent, $appChat->getAgent());
+        $this->assertSame('test_chat_id', $appChat->getChatId());
+        $this->assertSame('测试群聊', $appChat->getName());
+        $this->assertSame('owner_user_id', $appChat->getOwner());
+        $this->assertSame(['user1', 'user2', 'user3'], $appChat->getUserList());
+        $this->assertTrue($appChat->isSynced());
+        $this->assertInstanceOf(\DateTimeImmutable::class, $appChat->getLastSyncedAt());
     }
 
-    public function test_setChatId_andGetChatId(): void
+    public function testAppChatStringable(): void
     {
-        $chatId = 'test_chat_12345';
-        $this->appChat->setChatId($chatId);
+        $agent = $this->createMock(AgentInterface::class);
 
-        $this->assertEquals($chatId, $this->appChat->getChatId());
+        $appChat = new AppChat();
+        $appChat->setAgent($agent);
+        $appChat->setChatId('test_chat_id');
+        $appChat->setName('测试群聊');
+        $appChat->setOwner('owner_user_id');
+
+        $this->assertIsString((string) $appChat);
     }
 
-    public function test_setChatId_withSpecialCharacters(): void
+    public function testAppChatDefaults(): void
     {
-        $chatId = 'chat-id_with.special123';
-        $this->appChat->setChatId($chatId);
+        $appChat = new AppChat();
 
-        $this->assertEquals($chatId, $this->appChat->getChatId());
+        $this->assertFalse($appChat->isSynced());
+        $this->assertNull($appChat->getLastSyncedAt());
+        $this->assertSame([], $appChat->getUserList());
     }
 
-    public function test_setName_andGetName(): void
+    public function testSettersWorkCorrectly(): void
     {
-        $name = '测试群聊名称';
-        $this->appChat->setName($name);
+        $agent = $this->createMock(AgentInterface::class);
+        $now = new \DateTimeImmutable();
 
-        $this->assertEquals($name, $this->appChat->getName());
+        $appChat = new AppChat();
+
+        $appChat->setAgent($agent);
+        $appChat->setChatId('test_id');
+        $appChat->setName('test_name');
+        $appChat->setOwner('test_owner');
+        $appChat->setUserList(['user1']);
+        $appChat->setIsSynced(true);
+        $appChat->setLastSyncedAt($now);
+
+        $this->assertSame($agent, $appChat->getAgent());
+        $this->assertSame('test_id', $appChat->getChatId());
+        $this->assertSame('test_name', $appChat->getName());
+        $this->assertSame('test_owner', $appChat->getOwner());
+        $this->assertSame(['user1'], $appChat->getUserList());
+        $this->assertTrue($appChat->isSynced());
+        $this->assertSame($now, $appChat->getLastSyncedAt());
     }
-
-    public function test_setName_withEmptyString(): void
-    {
-        $this->appChat->setName('');
-
-        $this->assertEquals('', $this->appChat->getName());
-    }
-
-    public function test_setOwner_andGetOwner(): void
-    {
-        $owner = 'test_user_owner';
-        $this->appChat->setOwner($owner);
-
-        $this->assertEquals($owner, $this->appChat->getOwner());
-    }
-
-    public function test_setUserList_andGetUserList(): void
-    {
-        $userList = ['user1', 'user2', 'user3'];
-        $this->appChat->setUserList($userList);
-
-        $this->assertEquals($userList, $this->appChat->getUserList());
-    }
-
-    public function test_setUserList_withEmptyArray(): void
-    {
-        $this->appChat->setUserList([]);
-
-        $this->assertEquals([], $this->appChat->getUserList());
-    }
-
-    public function test_setUserList_withSingleUser(): void
-    {
-        $userList = ['single_user'];
-        $this->appChat->setUserList($userList);
-
-        $this->assertEquals($userList, $this->appChat->getUserList());
-    }
-
-    public function test_setIsSynced_andIsSynced(): void
-    {
-        $this->appChat->setIsSynced(true);
-        $this->assertTrue($this->appChat->isSynced());
-
-        $this->appChat->setIsSynced(false);
-        $this->assertFalse($this->appChat->isSynced());
-    }
-
-    public function test_isSynced_defaultValue(): void
-    {
-        $this->assertFalse($this->appChat->isSynced());
-    }
-
-    public function test_setLastSyncedAt_andGetLastSyncedAt(): void
-    {
-        $syncTime = new \DateTimeImmutable();
-        $this->appChat->setLastSyncedAt($syncTime);
-
-        $this->assertEquals($syncTime, $this->appChat->getLastSyncedAt());
-    }
-
-    public function test_setLastSyncedAt_withNull(): void
-    {
-        $this->appChat->setLastSyncedAt(null);
-
-        $this->assertNull($this->appChat->getLastSyncedAt());
-    }
-
-    public function test_setCreatedBy_andGetCreatedBy(): void
-    {
-        $createdBy = 'test_creator';
-        $this->appChat->setCreatedBy($createdBy);
-
-        $this->assertEquals($createdBy, $this->appChat->getCreatedBy());
-    }
-
-    public function test_setUpdatedBy_andGetUpdatedBy(): void
-    {
-        $updatedBy = 'test_updater';
-        $this->appChat->setUpdatedBy($updatedBy);
-
-        $this->assertEquals($updatedBy, $this->appChat->getUpdatedBy());
-    }
-
-    public function test_setCreateTime_andGetCreateTime(): void
-    {
-        $createTime = new \DateTimeImmutable();
-        $this->appChat->setCreateTime($createTime);
-
-        $this->assertEquals($createTime, $this->appChat->getCreateTime());
-    }
-
-    public function test_setUpdateTime_andGetUpdateTime(): void
-    {
-        $updateTime = new \DateTimeImmutable();
-        $this->appChat->setUpdateTime($updateTime);
-
-        $this->assertEquals($updateTime, $this->appChat->getUpdateTime());
-    }
-
-    public function test_getId_defaultNull(): void
-    {
-        $this->assertNull($this->appChat->getId());
-    }
-
-    public function test_fluent_interface(): void
-    {
-        /** @var MockObject&AgentInterface $agent */
-        $agent = $this->agent;
-        $result = $this->appChat
-            ->setAgent($agent)
-            ->setChatId('test_chat')
-            ->setName('Test Chat')
-            ->setOwner('owner')
-            ->setUserList(['user1', 'user2'])
-            ->setIsSynced(true);
-
-        $this->assertSame($this->appChat, $result);
-        $this->assertEquals($agent, $this->appChat->getAgent());
-        $this->assertEquals('test_chat', $this->appChat->getChatId());
-        $this->assertEquals('Test Chat', $this->appChat->getName());
-        $this->assertEquals('owner', $this->appChat->getOwner());
-        $this->assertEquals(['user1', 'user2'], $this->appChat->getUserList());
-        $this->assertTrue($this->appChat->isSynced());
-    }
-} 
+}

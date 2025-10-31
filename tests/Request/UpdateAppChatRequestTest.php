@@ -2,194 +2,286 @@
 
 namespace WechatWorkAppChatBundle\Tests\Request;
 
-use PHPUnit\Framework\TestCase;
+use HttpClientBundle\Tests\Request\RequestTestCase;
+use PHPUnit\Framework\Attributes\CoversClass;
+use Tourze\WechatWorkContracts\AgentInterface;
 use WechatWorkAppChatBundle\Request\UpdateAppChatRequest;
-use WechatWorkBundle\Entity\Agent;
-use WechatWorkBundle\Entity\Corp;
 
-class UpdateAppChatRequestTest extends TestCase
+/**
+ * @internal
+ */
+#[CoversClass(UpdateAppChatRequest::class)]
+final class UpdateAppChatRequestTest extends RequestTestCase
 {
-    private UpdateAppChatRequest $request;
-    private Agent $agent;
-
-    protected function setUp(): void
+    public function testCreateRequest(): void
     {
-        $this->request = new UpdateAppChatRequest();
-        
-        $corp = new Corp();
-        $this->agent = new Agent();
-        $this->agent->setCorp($corp);
-        $this->agent->setAgentId('test_agent_id');
+        $agent = $this->createMock(AgentInterface::class);
+
+        $request = new UpdateAppChatRequest();
+        $request->setAgent($agent);
+        $request->setChatId('test_chat_123');
+        $request->setName('更新群聊');
+        $request->setOwner('new_owner');
+        $request->setAddUserList(['user4', 'user5']);
+        $request->setDelUserList(['user1', 'user2']);
+
+        $this->assertSame($agent, $request->getAgent());
+        $this->assertSame('test_chat_123', $request->getChatId());
+        $this->assertSame('更新群聊', $request->getName());
+        $this->assertSame('new_owner', $request->getOwner());
+        $this->assertSame(['user4', 'user5'], $request->getAddUserList());
+        $this->assertSame(['user1', 'user2'], $request->getDelUserList());
     }
 
-    public function test_getRequestPath(): void
+    public function testGetRequestPath(): void
     {
-        $this->assertEquals('/cgi-bin/appchat/update', $this->request->getRequestPath());
+        $request = new UpdateAppChatRequest();
+        $this->assertSame('/cgi-bin/appchat/update', $request->getRequestPath());
     }
 
-    public function test_setChatId_andGetChatId(): void
+    public function testGetRequestOptions(): void
     {
-        $chatId = 'test_chat_update_123';
-        $this->request->setChatId($chatId);
-
-        $this->assertEquals($chatId, $this->request->getChatId());
-    }
-
-    public function test_setName_andGetName(): void
-    {
-        $name = '更新后的群聊名称';
-        $this->request->setName($name);
-
-        $this->assertEquals($name, $this->request->getName());
-    }
-
-    public function test_setOwner_andGetOwner(): void
-    {
-        $owner = 'new_owner_user';
-        $this->request->setOwner($owner);
-
-        $this->assertEquals($owner, $this->request->getOwner());
-    }
-
-    public function test_setAddUserList_andGetAddUserList(): void
-    {
-        $addUserList = ['new_user1', 'new_user2'];
-        $this->request->setAddUserList($addUserList);
-
-        $this->assertEquals($addUserList, $this->request->getAddUserList());
-    }
-
-    public function test_setAddUserList_withEmptyArray(): void
-    {
-        $this->request->setAddUserList([]);
-
-        $this->assertEquals([], $this->request->getAddUserList());
-    }
-
-    public function test_setDelUserList_andGetDelUserList(): void
-    {
-        $delUserList = ['remove_user1', 'remove_user2'];
-        $this->request->setDelUserList($delUserList);
-
-        $this->assertEquals($delUserList, $this->request->getDelUserList());
-    }
-
-    public function test_setDelUserList_withEmptyArray(): void
-    {
-        $this->request->setDelUserList([]);
-
-        $this->assertEquals([], $this->request->getDelUserList());
-    }
-
-    public function test_getRequestOptions_withAllFields(): void
-    {
-        $chatId = 'update_chat_id';
-        $name = '完整更新群聊';
-        $owner = 'update_owner';
-        $addUserList = ['add_user1', 'add_user2'];
-        $delUserList = ['del_user1'];
-
-        $this->request->setAgent($this->agent);
-        $this->request->setChatId($chatId);
-        $this->request->setName($name);
-        $this->request->setOwner($owner);
-        $this->request->setAddUserList($addUserList);
-        $this->request->setDelUserList($delUserList);
+        $request = new UpdateAppChatRequest();
+        $request->setChatId('update_chat');
+        $request->setName('测试更新');
+        $request->setOwner('owner_update');
+        $request->setAddUserList(['add1', 'add2']);
+        $request->setDelUserList(['del1']);
 
         $expected = [
             'json' => [
-                'chatid' => $chatId,
-                'name' => $name,
-                'owner' => $owner,
-                'add_user_list' => $addUserList,
-                'del_user_list' => $delUserList,
+                'chatid' => 'update_chat',
+                'name' => '测试更新',
+                'owner' => 'owner_update',
+                'add_user_list' => ['add1', 'add2'],
+                'del_user_list' => ['del1'],
             ],
         ];
 
-        $this->assertEquals($expected, $this->request->getRequestOptions());
+        $this->assertSame($expected, $request->getRequestOptions());
     }
 
-    public function test_getRequestOptions_withMinimalFields(): void
+    public function testEmptyUserLists(): void
     {
-        $chatId = 'minimal_update_chat';
-        $name = 'Minimal Update';
-        $owner = 'minimal_owner';
+        $request = new UpdateAppChatRequest();
+        $request->setChatId('empty_lists_chat');
+        $request->setName('Empty Lists');
+        $request->setOwner('owner');
+        $request->setAddUserList([]);
+        $request->setDelUserList([]);
 
-        $this->request->setAgent($this->agent);
-        $this->request->setChatId($chatId);
-        $this->request->setName($name);
-        $this->request->setOwner($owner);
-        // 默认值为空数组
-
-        $expected = [
-            'json' => [
-                'chatid' => $chatId,
-                'name' => $name,
-                'owner' => $owner,
-                'add_user_list' => [],
-                'del_user_list' => [],
-            ],
-        ];
-
-        $this->assertEquals($expected, $this->request->getRequestOptions());
+        $options = $request->getRequestOptions();
+        $this->assertNotNull($options);
+        $this->assertArrayHasKey('json', $options);
+        $this->assertIsArray($options['json']);
+        $this->assertSame([], $options['json']['add_user_list']);
+        $this->assertSame([], $options['json']['del_user_list']);
     }
 
-    public function test_getRequestOptions_withOnlyAddUsers(): void
+    public function testDefaultUserLists(): void
     {
-        $chatId = 'add_only_chat';
-        $name = 'Add Users Only';
-        $owner = 'add_owner';
-        $addUserList = ['new_user1', 'new_user2', 'new_user3'];
-
-        $this->request->setAgent($this->agent);
-        $this->request->setChatId($chatId);
-        $this->request->setName($name);
-        $this->request->setOwner($owner);
-        $this->request->setAddUserList($addUserList);
-
-        $expected = [
-            'json' => [
-                'chatid' => $chatId,
-                'name' => $name,
-                'owner' => $owner,
-                'add_user_list' => $addUserList,
-                'del_user_list' => [],
-            ],
-        ];
-
-        $this->assertEquals($expected, $this->request->getRequestOptions());
+        $request = new UpdateAppChatRequest();
+        $this->assertSame([], $request->getAddUserList());
+        $this->assertSame([], $request->getDelUserList());
     }
 
-    public function test_getRequestOptions_withOnlyDeleteUsers(): void
+    public function testSingleUserInLists(): void
     {
-        $chatId = 'del_only_chat';
-        $name = 'Delete Users Only';
-        $owner = 'del_owner';
-        $delUserList = ['old_user1', 'old_user2'];
+        $request = new UpdateAppChatRequest();
+        $request->setChatId('single_user_chat');
+        $request->setName('Single User');
+        $request->setOwner('owner');
+        $request->setAddUserList(['single_add']);
+        $request->setDelUserList(['single_del']);
 
-        $this->request->setAgent($this->agent);
-        $this->request->setChatId($chatId);
-        $this->request->setName($name);
-        $this->request->setOwner($owner);
-        $this->request->setDelUserList($delUserList);
-
-        $expected = [
-            'json' => [
-                'chatid' => $chatId,
-                'name' => $name,
-                'owner' => $owner,
-                'add_user_list' => [],
-                'del_user_list' => $delUserList,
-            ],
-        ];
-
-        $this->assertEquals($expected, $this->request->getRequestOptions());
+        $options = $request->getRequestOptions();
+        $this->assertNotNull($options);
+        $this->assertArrayHasKey('json', $options);
+        $this->assertIsArray($options['json']);
+        $this->assertSame(['single_add'], $options['json']['add_user_list']);
+        $this->assertSame(['single_del'], $options['json']['del_user_list']);
     }
 
-    public function test_agentAware_trait(): void
+    public function testMultipleUsersInLists(): void
     {
-        $this->request->setAgent($this->agent);
+        $request = new UpdateAppChatRequest();
+        $request->setChatId('multiple_users_chat');
+        $request->setName('Multiple Users');
+        $request->setOwner('owner');
 
-        $this->assertEquals($this->agent, $this->request->getAgent());
+        $addUsers = ['add1', 'add2', 'add3', 'add4'];
+        $delUsers = ['del1', 'del2', 'del3'];
+
+        $request->setAddUserList($addUsers);
+        $request->setDelUserList($delUsers);
+
+        $options = $request->getRequestOptions();
+        $this->assertNotNull($options);
+        $this->assertArrayHasKey('json', $options);
+        $this->assertIsArray($options['json']);
+        $this->assertSame($addUsers, $options['json']['add_user_list']);
+        $this->assertSame($delUsers, $options['json']['del_user_list']);
+        $this->assertCount(4, $options['json']['add_user_list']);
+        $this->assertCount(3, $options['json']['del_user_list']);
     }
-} 
+
+    public function testChineseCharactersInName(): void
+    {
+        $request = new UpdateAppChatRequest();
+        $request->setChatId('chinese_name_chat');
+        $request->setName('中文群聊名称测试更新');
+        $request->setOwner('owner');
+        $request->setAddUserList([]);
+        $request->setDelUserList([]);
+
+        $options = $request->getRequestOptions();
+        $this->assertNotNull($options);
+        $this->assertArrayHasKey('json', $options);
+        $this->assertIsArray($options['json']);
+        $this->assertSame('中文群聊名称测试更新', $options['json']['name']);
+    }
+
+    public function testSpecialCharactersInOwner(): void
+    {
+        $request = new UpdateAppChatRequest();
+        $request->setChatId('special_owner_chat');
+        $request->setName('Special Owner');
+        $request->setOwner('owner_with-special.chars_456');
+        $request->setAddUserList([]);
+        $request->setDelUserList([]);
+
+        $options = $request->getRequestOptions();
+        $this->assertNotNull($options);
+        $this->assertArrayHasKey('json', $options);
+        $this->assertIsArray($options['json']);
+        $this->assertSame('owner_with-special.chars_456', $options['json']['owner']);
+    }
+
+    public function testLongUserLists(): void
+    {
+        $request = new UpdateAppChatRequest();
+        $request->setChatId('long_lists_chat');
+        $request->setName('Long Lists');
+        $request->setOwner('owner');
+
+        // Create long lists
+        $addUsers = [];
+        $delUsers = [];
+        for ($i = 1; $i <= 20; ++$i) {
+            $addUsers[] = "add_user{$i}";
+        }
+        for ($i = 1; $i <= 15; ++$i) {
+            $delUsers[] = "del_user{$i}";
+        }
+
+        $request->setAddUserList($addUsers);
+        $request->setDelUserList($delUsers);
+
+        $options = $request->getRequestOptions();
+        $this->assertNotNull($options);
+        $this->assertArrayHasKey('json', $options);
+        $this->assertIsArray($options['json']);
+        /** @var array<string, mixed> $json */
+        $json = $options['json'];
+        $this->assertArrayHasKey('add_user_list', $json);
+        $this->assertArrayHasKey('del_user_list', $json);
+        $this->assertIsArray($json['add_user_list']);
+        $this->assertIsArray($json['del_user_list']);
+        $this->assertCount(20, $json['add_user_list']);
+        $this->assertCount(15, $json['del_user_list']);
+        $this->assertSame('add_user1', $json['add_user_list'][0]);
+        $this->assertSame('add_user20', $json['add_user_list'][19]);
+        $this->assertSame('del_user1', $json['del_user_list'][0]);
+        $this->assertSame('del_user15', $json['del_user_list'][14]);
+    }
+
+    public function testRequestStructure(): void
+    {
+        $request = new UpdateAppChatRequest();
+        $request->setChatId('structure_test');
+        $request->setName('Structure Test');
+        $request->setOwner('owner');
+        $request->setAddUserList(['add1']);
+        $request->setDelUserList(['del1']);
+
+        $options = $request->getRequestOptions();
+
+        $this->assertNotNull($options);
+        $this->assertIsArray($options);
+        $this->assertArrayHasKey('json', $options);
+
+        /** @var array<string, mixed> $json */
+        $json = $options['json'];
+        $this->assertArrayHasKey('chatid', $json);
+        $this->assertArrayHasKey('name', $json);
+        $this->assertArrayHasKey('owner', $json);
+        $this->assertArrayHasKey('add_user_list', $json);
+        $this->assertArrayHasKey('del_user_list', $json);
+
+        $this->assertIsString($json['chatid']);
+        $this->assertIsString($json['name']);
+        $this->assertIsString($json['owner']);
+        $this->assertIsArray($json['add_user_list']);
+        $this->assertIsArray($json['del_user_list']);
+    }
+
+    public function testUserListTypeConsistency(): void
+    {
+        $request = new UpdateAppChatRequest();
+        $addUsers = ['add1', 'add2', 'add3'];
+        $delUsers = ['del1', 'del2'];
+
+        $request->setAddUserList($addUsers);
+        $request->setDelUserList($delUsers);
+
+        $retrievedAddUsers = $request->getAddUserList();
+        $retrievedDelUsers = $request->getDelUserList();
+
+        $this->assertSame($addUsers, $retrievedAddUsers);
+        $this->assertSame($delUsers, $retrievedDelUsers);
+        $this->assertIsArray($retrievedAddUsers);
+        $this->assertIsArray($retrievedDelUsers);
+
+        foreach ($retrievedAddUsers as $user) {
+            $this->assertIsString($user);
+        }
+
+        foreach ($retrievedDelUsers as $user) {
+            $this->assertIsString($user);
+        }
+    }
+
+    public function testOnlyAddUsers(): void
+    {
+        $request = new UpdateAppChatRequest();
+        $request->setChatId('only_add_chat');
+        $request->setName('Only Add Users');
+        $request->setOwner('owner');
+        $request->setAddUserList(['new1', 'new2']);
+        // Don't set del users (should default to empty)
+
+        $options = $request->getRequestOptions();
+        $this->assertNotNull($options);
+        $this->assertArrayHasKey('json', $options);
+        $this->assertIsArray($options['json']);
+        $this->assertSame(['new1', 'new2'], $options['json']['add_user_list']);
+        $this->assertSame([], $options['json']['del_user_list']);
+    }
+
+    public function testOnlyDelUsers(): void
+    {
+        $request = new UpdateAppChatRequest();
+        $request->setChatId('only_del_chat');
+        $request->setName('Only Del Users');
+        $request->setOwner('owner');
+        $request->setDelUserList(['remove1', 'remove2']);
+        // Don't set add users (should default to empty)
+
+        $options = $request->getRequestOptions();
+        $this->assertNotNull($options);
+        $this->assertArrayHasKey('json', $options);
+        $this->assertIsArray($options['json']);
+        $this->assertSame([], $options['json']['add_user_list']);
+        $this->assertSame(['remove1', 'remove2'], $options['json']['del_user_list']);
+    }
+}
