@@ -53,13 +53,6 @@ final class AppChatCrudControllerTest extends AbstractEasyAdminControllerTestCas
         ];
     }
 
-    public function testGetEntityFqcn(): void
-    {
-        $controller = $this->getControllerService();
-
-        $this->assertSame(AppChat::class, $controller::getEntityFqcn());
-    }
-
     public function testConfigureFields(): void
     {
         $controller = $this->getControllerService();

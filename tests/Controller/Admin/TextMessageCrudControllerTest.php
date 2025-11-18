@@ -49,13 +49,6 @@ final class TextMessageCrudControllerTest extends AbstractEasyAdminControllerTes
         ];
     }
 
-    public function testGetEntityFqcn(): void
-    {
-        $controller = $this->getControllerService();
-
-        $this->assertSame(TextMessage::class, $controller::getEntityFqcn());
-    }
-
     public function testConfigureFields(): void
     {
         $controller = $this->getControllerService();

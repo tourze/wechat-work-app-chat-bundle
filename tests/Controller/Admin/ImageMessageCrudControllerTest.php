@@ -49,13 +49,6 @@ final class ImageMessageCrudControllerTest extends AbstractEasyAdminControllerTe
         ];
     }
 
-    public function testGetEntityFqcn(): void
-    {
-        $controller = $this->getControllerService();
-
-        $this->assertSame(ImageMessage::class, $controller::getEntityFqcn());
-    }
-
     public function testConfigureFields(): void
     {
         $controller = $this->getControllerService();

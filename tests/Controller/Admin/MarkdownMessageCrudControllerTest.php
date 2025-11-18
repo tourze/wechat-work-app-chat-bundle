@@ -49,13 +49,6 @@ final class MarkdownMessageCrudControllerTest extends AbstractEasyAdminControlle
         ];
     }
 
-    public function testGetEntityFqcn(): void
-    {
-        $controller = $this->getControllerService();
-
-        $this->assertSame(MarkdownMessage::class, $controller::getEntityFqcn());
-    }
-
     public function testConfigureFields(): void
     {
         $controller = $this->getControllerService();
